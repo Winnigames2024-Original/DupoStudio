@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   build:
@@ -151,3 +152,13 @@ jobs:
             BuildTools.zip
             update.exe
             uninstall.exe
+
+      # Сайт собирается на ветке main: выкладывать Pages с тега
+      # не разрешают правила окружения, поэтому запускаем сборку отдельно.
+      - name: Пересобрать сайт со страницей версии
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run static.yml --ref main
+          Write-Host "Сборка сайта запущена"
