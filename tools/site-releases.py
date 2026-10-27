@@ -95,6 +95,10 @@ def about(name):
         return "студия одним файлом, без установки"
     if n == "buildtools.zip":
         return "DupoBuild.exe и DupoLang.exe отдельно"
+    if n == "update.exe":
+        return "обновление с GitHub"
+    if n == "uninstall.exe":
+        return "удаление по uninstall.dll"
     if n.endswith(".zip"):
         return "архив"
     if n.endswith(".tar.gz"):
