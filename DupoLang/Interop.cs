@@ -10,6 +10,13 @@ namespace DupoLang
     public class NativeNamespace
     {
         public string Name;
+
+        /// <summary>Объект, чьи члены доступны через этот модуль (для живых свойств).</summary>
+        public object Target;
+
+        /// <summary>Тип, чьи статические члены доступны через этот модуль.</summary>
+        public Type Backing;
+
         public readonly Dictionary<string, object> Members =
             new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
@@ -172,6 +179,26 @@ namespace DupoLang
             {
                 object v;
                 if (ns.TryGet(name, out v)) return v;
+
+                if (ns.Target != null)
+                {
+                    Type ot = ns.Target.GetType();
+
+                    var op = ot.GetProperty(name, InstFlags);
+                    if (op != null && op.CanRead) return Wrap(op.GetValue(ns.Target, null));
+
+                    var of = ot.GetField(name, InstFlags);
+                    if (of != null) return Wrap(of.GetValue(ns.Target));
+
+                    if (HasMethod(ot, name, false)) return new NativeMethod(ns.Target, ot, name);
+                }
+
+                if (ns.Backing != null)
+                {
+                    try { return GetStatic(ns.Backing, name, line); }
+                    catch (DupoError) { }
+                }
+
                 throw new DupoError("В модуле '" + ns.Name + "' нет '" + name + "'", line);
             }
 

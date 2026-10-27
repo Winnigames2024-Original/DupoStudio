@@ -11,7 +11,11 @@ namespace DupoLang
     /// <summary>Стандартная библиотека DupoLang.</summary>
     public static class Modules
     {
-        public static readonly string[] Available = { "Dupo.Web", "Dupo.IO", "Dupo.Sys", "Dupo.App" };
+        public static readonly string[] Available =
+        {
+            "Dupo.Web", "Dupo.App", "Dupo.Java",
+            "Dupo.System.Files", "Dupo.System", "Dupo.IO", "Dupo.Sys"
+        };
 
         public static NativeNamespace Load(string module, Interp interp)
         {
@@ -21,6 +25,9 @@ namespace DupoLang
                 case "Dupo.IO": return IO();
                 case "Dupo.Sys": return Sys();
                 case "Dupo.App": return App(interp);
+                case "Dupo.Java": return Java(interp);
+                case "Dupo.System.Files": return Files(interp);
+                case "Dupo.System": return SystemNs(interp);
             }
             return null;
         }
@@ -102,6 +109,38 @@ namespace DupoLang
                 return new List<object>(info.Entries.Select(x => (object)x.Path));
             });
 
+            return ns;
+        }
+
+        // ---------------- Dupo.Java ----------------
+        static NativeNamespace Java(Interp interp)
+        {
+            JavaTools.Log = interp.Print;
+
+            // Target — живые свойства (IsInstalled, Version), Backing — пути (Home, JavacPath).
+            var ns = new NativeNamespace("Java");
+            ns.Target = JavaTools.Instance;
+            ns.Backing = typeof(JavaTools);
+            return ns;
+        }
+
+        // ---------------- Dupo.System.Files ----------------
+        static NativeNamespace Files(Interp interp)
+        {
+            FileTools.Log = interp.Print;
+
+            var ns = new NativeNamespace("Files");
+            ns.Backing = typeof(FileTools);
+            return ns;
+        }
+
+        // ---------------- Dupo.System ----------------
+        static NativeNamespace SystemNs(Interp interp)
+        {
+            var ns = new NativeNamespace("System");
+            ns.Members["Files"] = Files(interp);
+            ns.Members["Java"] = Java(interp);
+            ns.Members["Sys"] = Sys();
             return ns;
         }
 

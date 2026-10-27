@@ -12,6 +12,7 @@ namespace DupoStudio
         ToolStripMenuItem miExport, miImport;
         ToolStripMenuItem miRun, miStart, miStop, miBuild, miBuildExe;
         ToolStripMenuItem miTools, miPhpInstall, miPhpInfo, miPhpRemove, miBrowser, miFolder;
+        ToolStripMenuItem miJdkInstall, miJdkInfo, miJdkRemove, miNewJava;
         ToolStripMenuItem miHelp, miAbout;
 
         ToolStrip toolMain;
@@ -22,7 +23,7 @@ namespace DupoStudio
         TabControl tabsEditor;
         RichTextBox txtOutput;
         StatusStrip statusMain;
-        ToolStripStatusLabel lblStatus, lblCaret, lblProject, lblPhp;
+        ToolStripStatusLabel lblStatus, lblCaret, lblProject, lblPhp, lblJava;
 
         protected override void Dispose(bool disposing)
         {
@@ -37,6 +38,7 @@ namespace DupoStudio
             menuMain = new MenuStrip();
             miFile = new ToolStripMenuItem("Файл");
             miNewProject = new ToolStripMenuItem("Новый проект...");
+            miNewJava = new ToolStripMenuItem("Новый Java-проект...");
             miOpenProject = new ToolStripMenuItem("Открыть проект...");
             miSave = new ToolStripMenuItem("Сохранить");
             miSaveAll = new ToolStripMenuItem("Сохранить всё");
@@ -54,6 +56,9 @@ namespace DupoStudio
             miPhpInstall = new ToolStripMenuItem("Установить PHP");
             miPhpInfo = new ToolStripMenuItem("Версия PHP");
             miPhpRemove = new ToolStripMenuItem("Удалить PHP");
+            miJdkInstall = new ToolStripMenuItem("Установить JDK (Java)");
+            miJdkInfo = new ToolStripMenuItem("Версия Java");
+            miJdkRemove = new ToolStripMenuItem("Удалить JDK");
             miBrowser = new ToolStripMenuItem("Открыть в браузере");
             miFolder = new ToolStripMenuItem("Открыть папку проекта");
 
@@ -80,6 +85,7 @@ namespace DupoStudio
             lblCaret = new ToolStripStatusLabel("1 : 1");
             lblProject = new ToolStripStatusLabel("  нет проекта  ");
             lblPhp = new ToolStripStatusLabel("PHP не установлен");
+            lblJava = new ToolStripStatusLabel("JDK не установлен");
 
             ((System.ComponentModel.ISupportInitialize)splitMain).BeginInit();
             ((System.ComponentModel.ISupportInitialize)splitRight).BeginInit();
@@ -91,13 +97,15 @@ namespace DupoStudio
 
             // --- меню ---
             miFile.DropDownItems.AddRange(new ToolStripItem[] {
-                miNewProject, miOpenProject, new ToolStripSeparator(), miSave, miSaveAll,
+                miNewProject, miNewJava, miOpenProject, new ToolStripSeparator(), miSave, miSaveAll,
                 new ToolStripSeparator(), miExport, miImport,
                 new ToolStripSeparator(), miExit });
             miRun.DropDownItems.AddRange(new ToolStripItem[] {
                 miStart, miStop, new ToolStripSeparator(), miBuildExe, miBuild });
             miTools.DropDownItems.AddRange(new ToolStripItem[] {
-                miPhpInstall, miPhpInfo, miPhpRemove, new ToolStripSeparator(), miBrowser, miFolder });
+                miPhpInstall, miPhpInfo, miPhpRemove, new ToolStripSeparator(),
+                miJdkInstall, miJdkInfo, miJdkRemove, new ToolStripSeparator(),
+                miBrowser, miFolder });
             miHelp.DropDownItems.Add(miAbout);
 
             miSave.ShortcutKeys = Keys.Control | Keys.S;
@@ -200,7 +208,8 @@ namespace DupoStudio
             lblPhp.Margin = new Padding(0, 0, 18, 0);
             lblCaret.ForeColor = Color.FromArgb(205, 220, 245);
 
-            statusMain.Items.AddRange(new ToolStripItem[] { lblProject, lblStatus, lblPhp, lblCaret });
+            lblJava.Margin = new Padding(0, 0, 18, 0);
+            statusMain.Items.AddRange(new ToolStripItem[] { lblProject, lblStatus, lblPhp, lblJava, lblCaret });
 
             // --- форма ---
             AutoScaleMode = AutoScaleMode.Font;

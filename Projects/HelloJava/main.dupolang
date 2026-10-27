@@ -1,0 +1,25 @@
+// HelloJava — сборка и запуск Java-программы из DupoLang
+using Dupo.Java
+using Dupo.System.Files
+
+print("=== HelloJava ===")
+
+if (Java.IsInstalled == false) {
+    print("JDK не найден — ставлю (около 190 МБ)...")
+    Java.Install()
+}
+
+print("Java: " + Java.Version)
+print("")
+
+// src/*.java -> build/classes -> build/HelloJava.jar
+Java.Compile("src", "build/classes")
+string jar = Java.Jar("build/classes", "build/HelloJava.jar", "Main")
+
+print("")
+print("--- вывод программы ---")
+Java.RunJar(jar)
+print("-----------------------")
+print("")
+print("Размер архива: " + Files.Size(jar) + " байт")
+print("Собрано: " + Files.Modified(jar))

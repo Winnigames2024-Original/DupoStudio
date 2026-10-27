@@ -49,7 +49,7 @@ namespace DupoLang
         {
             int line = Cur.Line;
 
-            if (IsKw("import"))
+            if (IsKw("import") || IsKw("using"))
             {
                 Eat();
                 var sb = new StringBuilder(ExpectIdent());

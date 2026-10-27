@@ -1,0 +1,49 @@
+// FilesDemo — создание файлов и управление ими
+using Dupo.System.Files
+
+print("=== Работа с файлами ===")
+print("Папка проекта: " + Files.ProjectDir())
+print("")
+
+// создание
+Files.MakeDir("data")
+Files.Write("data/notes.txt", "Первая строка\n")
+Files.AppendLine("data/notes.txt", "Вторая строка")
+Files.AppendLine("data/notes.txt", "Третья строка")
+
+print("Создан data/notes.txt — " + Files.Size("data/notes.txt") + " байт")
+print("")
+
+// чтение построчно
+var lines = Files.ReadLines("data/notes.txt")
+print("Строк внутри: " + len(lines))
+for (var i = 0; i < len(lines); i = i + 1) {
+    print("  " + (i + 1) + ": " + lines[i])
+}
+print("")
+
+// замена текста прямо в файле
+var n = Files.ReplaceIn("data/notes.txt", "строка", "запись")
+print("Заменено вхождений: " + n)
+
+// копирование, переименование
+Files.Copy("data/notes.txt", "data/backup.txt")
+Files.Rename("data/backup.txt", "notes-copy.txt")
+
+print("")
+print("Файлы в data:")
+var found = Files.List("data", "*.txt")
+for (var i = 0; i < len(found); i = i + 1) {
+    print("  " + Files.Name(found[i]) + "   " + Files.Size(found[i]) + " байт")
+}
+
+// архив
+print("")
+Files.Zip("data", "data.zip")
+print("Архив: " + Files.Size("data.zip") + " байт")
+
+// уборка
+Files.Delete("data.zip")
+Files.DeleteDir("data")
+print("")
+print("Прибрано. Папка data существует: " + Files.DirExists("data"))

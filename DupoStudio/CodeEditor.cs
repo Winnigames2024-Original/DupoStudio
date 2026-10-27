@@ -22,14 +22,29 @@ namespace DupoStudio
         static readonly Regex RxString = new Regex("\"[^\"\\n]*\"|'[^'\\n]*'", RegexOptions.Compiled);
         static readonly Regex RxNumber = new Regex(@"\b\d+(\.\d+)?\b", RegexOptions.Compiled);
         static readonly Regex RxKeyword = new Regex(
-            @"\b(import|var|new|func|return|if|else|while|for|true|false|null|break|continue)\b",
+            @"\b(import|using|var|new|func|return|if|else|while|for|true|false|null|break|continue)\b",
             RegexOptions.Compiled);
         static readonly Regex RxType = new Regex(
-            @"\b(Web|Server|Php|IO|Sys|Dupo|print|println|str|num|int|len|wait|now|random|list|push|upper|lower|split|round|abs|type)\b",
+            @"\b(Web|Server|Php|IO|Sys|App|Java|Files|System|Dupo|print|println|str|num|int|len|wait|now|random|list|push|upper|lower|split|round|abs|type)\b",
+            RegexOptions.Compiled);
+
+        static readonly Regex RxJavaKeyword = new Regex(
+            @"\b(abstract|assert|boolean|break|byte|case|catch|char|class|const|continue|default|do|double|" +
+            @"else|enum|extends|final|finally|float|for|goto|if|implements|import|instanceof|int|interface|" +
+            @"long|native|new|package|private|protected|public|return|short|static|strictfp|super|switch|" +
+            @"synchronized|this|throw|throws|transient|try|var|void|volatile|while|true|false|null|record|sealed)\b",
+            RegexOptions.Compiled);
+        static readonly Regex RxJavaType = new Regex(
+            @"\b(String|System|Object|Integer|Long|Double|Float|Boolean|Character|Byte|Math|List|ArrayList|" +
+            @"Map|HashMap|Set|HashSet|Arrays|Collections|Exception|RuntimeException|Thread|Runnable|" +
+            @"Scanner|File|StringBuilder|Optional|Stream|out|err|println|printf|print)\b",
             RegexOptions.Compiled);
 
         readonly Timer timer = new Timer();
         bool busy;
+
+        /// <summary>Подсвечивать как Java, а не как DupoLang.</summary>
+        public bool JavaMode;
 
         public string FilePath;
         public bool Dirty;
@@ -97,8 +112,8 @@ namespace DupoStudio
                 SelectionColor = Theme.Text;
 
                 Paint(RxNumber, text, Theme.Number);
-                Paint(RxKeyword, text, Theme.Keyword);
-                Paint(RxType, text, Theme.TypeName);
+                Paint(JavaMode ? RxJavaKeyword : RxKeyword, text, Theme.Keyword);
+                Paint(JavaMode ? RxJavaType : RxType, text, Theme.TypeName);
                 Paint(RxString, text, Theme.Str);
                 Paint(RxComment, text, Theme.Comment);
             }

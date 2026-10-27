@@ -45,8 +45,34 @@
 
       <div class="rel latest">
         <div class="rel-head">
-          <h3>v1.2.0</h3>
+          <h3>v1.3.0</h3>
           <span class="tag new">последняя</span>
+          <span class="tag">Java и файлы</span>
+        </div>
+        <p class="date">27 октября 2026</p>
+        <ul>
+          <li><b>Модуль Dupo.System.Files</b> — создание файлов и управление ими:
+              запись, чтение построчно, замена текста, копирование, поиск по маске, архивы.</li>
+          <li><b>Модуль Dupo.Java</b> — <code>Java.Install()</code> ставит Temurin JDK,
+              дальше компиляция, сборка <code>.jar</code> и запуск.</li>
+          <li><code>using</code> работает как синоним <code>import</code>.</li>
+          <li>Студия: Java-проекты, подсветка Java, индикатор JDK в статус-баре.</li>
+        </ul>
+        <div class="assets">
+          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/releases/latest">
+            <span class="ic">🖥</span><span class="nm">DupoStudio-v1.3.0-win-net48.zip</span>
+            <span class="meta">собранная студия</span>
+          </a>
+          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/archive/refs/tags/v1.3.0.zip">
+            <span class="ic">📄</span><span class="nm">Source code (zip)</span>
+            <span class="meta">исходники</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="rel">
+        <div class="rel-head">
+          <h3>v1.2.0</h3>
           <span class="tag">сборка в один exe</span>
         </div>
         <p class="date">27 октября 2026</p>
@@ -114,7 +140,7 @@
 
 <footer>
   <div class="wrap">
-    <div>Dupo Studio · Winnigames2024-Original</div>
+    <div>Dupo Studio · Winnigames2024</div>
     <div><a href="https://github.com/Winnigames2024-Original/DupoStudio">GitHub</a></div>
   </div>
 </footer>
@@ -141,13 +167,6 @@
     return String(s || "").replace(/[&<>"]/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
     });
-  }
-
-  function md(s) {
-    return s
-      .replace(/`([^`]+)`/g, "<code>$1</code>")
-      .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
-      .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>');
   }
 
   function icon(name) {
@@ -178,10 +197,8 @@
           '<span class="meta">исходники</span></a>');
 
         var body = esc(rel.body || "").trim().split("\n")
-          .filter(function (s) { return s.trim() && !/^#{1,6}\s/.test(s.trim()) && !/^\|/.test(s.trim()); })
-          .map(function (s) {
-            return "<li>" + md(s.replace(/^[-*]\s*/, "")) + "</li>";
-          })
+          .filter(function (s) { return s.trim(); })
+          .map(function (s) { return "<li>" + s.replace(/^[-*]\s*/, "") + "</li>"; })
           .join("");
 
         return '<div class="rel' + (i === 0 ? ' latest' : '') + '">' +

@@ -19,8 +19,9 @@
 ---
 
 Пишете три строки на DupoLang — получаете готовый `.exe`.
-Веб-сервер и PHP ставятся сами, проект пакуется в собственный формат `.dapp`
-и собирается в один самостоятельный файл. C# WinForms, .NET Framework 4.8.
+Веб-сервер, PHP и JDK ставятся сами, файлами управляет `Dupo.System.Files`,
+проект пакуется в собственный формат `.dapp` и собирается в один
+самостоятельный файл. C# WinForms, .NET Framework 4.8.
 
 ```
 C:\DupoApp\
@@ -53,6 +54,7 @@ site.Start()
 Web.Open(site.Url)
 ```
 
+Подключение модулей: `import Dupo.Web` или `using Dupo.Web` — это одно и то же.
 Переменные: `var x = 1`, либо с типом — `string s = "привет"`, `Web.Server site = ...`
 Операторы: `if / else`, `while`, `for`, `func`, `return`, `break`, `continue`
 Типы значений: число, строка, bool, null, массив `[1, 2, 3]`
@@ -97,6 +99,64 @@ App.Import("HelloWeb.dapp", "C:/Games/HelloWeb")
 | `App.Unpack(файл)` | распаковать во временную папку |
 | `App.Info(файл)` | паспорт архива текстом |
 | `App.Files(файл)` | список файлов внутри |
+
+### Модуль Dupo.System.Files — файлы и папки
+
+```dupolang
+using Dupo.System.Files
+
+Files.Write("data/notes.txt", "Первая строка\n")
+Files.AppendLine("data/notes.txt", "Вторая строка")
+
+var lines = Files.ReadLines("data/notes.txt")
+print("Строк: " + len(lines))
+
+Files.ReplaceIn("data/notes.txt", "строка", "запись")
+Files.Copy("data/notes.txt", "data/backup.txt")
+Files.Zip("data", "data.zip")
+```
+
+| Группа | Функции |
+|---|---|
+| Создание и запись | `Create` `Write` `Append` `AppendLine` |
+| Чтение | `Read` `ReadLines` `Contains` `ReplaceIn` |
+| Файлы | `Exists` `Delete` `Copy` `Move` `Rename` `Size` `Modified` |
+| Пути | `Name` `NameOnly` `Extension` `Folder` `Full` `Join` `Temp` |
+| Папки | `MakeDir` `DirExists` `DeleteDir` `CopyDir` `ProjectDir` |
+| Списки | `List` `Dirs` `Find` `Tree` `Count` |
+| Архивы | `Zip` `Unzip` |
+| Система | `Open` |
+
+`Find(папка, маска)` ищет во вложенных папках. Относительные пути считаются
+от папки скрипта.
+
+### Модуль Dupo.Java — разработка на Java
+
+```dupolang
+using Dupo.Java
+
+if (Java.IsInstalled == false) {
+    Java.Install()
+}
+
+Java.Compile("src", "build/classes")
+string jar = Java.Jar("build/classes", "build/MyApp.jar", "Main")
+Java.RunJar(jar)
+```
+
+| Что | Зачем |
+|---|---|
+| `Java.Install()` | скачать Temurin JDK с adoptium.net (около 190 МБ) |
+| `Java.IsInstalled`, `Java.Version`, `Java.Folder` | состояние JDK |
+| `Java.Uninstall()` | удалить JDK |
+| `Java.New(папка, класс)` | создать заготовку `.java` |
+| `Java.Compile(исходники, папка классов)` | javac с UTF-8 |
+| `Java.Jar(классы, файл.jar, главный класс)` | собрать исполняемый jar |
+| `Java.Build(исходники, файл.jar, класс)` | компиляция и упаковка одним шагом |
+| `Java.Run(классы, класс)`, `Java.RunJar(файл)` | запустить и вернуть вывод |
+
+JDK ставится в `runtime\jdk` рядом со студией и не трогает систему —
+`JAVA_HOME` и `PATH` остаются как были.
 
 ### Модуль Dupo.IO
 

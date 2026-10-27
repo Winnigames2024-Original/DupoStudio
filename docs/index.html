@@ -27,12 +27,12 @@
 
 <div class="hero">
   <div class="wrap">
-    <div class="badge">Версия <b>1.2.0</b> · C# WinForms · .NET Framework 4.8</div>
+    <div class="badge">Версия <b>1.3.0</b> · C# WinForms · .NET Framework 4.8</div>
     <h1>Пишешь три строки —<br>получаешь <span class="grad">готовый .exe</span></h1>
     <p class="lead">
-      Конструктор приложений со своим языком DupoLang. Веб-сервер и PHP ставятся сами,
-      проект пакуется в собственный формат .dapp и собирается в один самостоятельный
-      исполняемый файл — без DLL рядом.
+      Конструктор приложений со своим языком DupoLang. Веб-сервер, PHP и JDK
+      ставятся сами, файлами управляет Dupo.System.Files, а проект собирается
+      в один самостоятельный исполняемый файл — без DLL рядом.
     </p>
     <div class="btns">
       <a class="btn primary" href="releases.html">↓&nbsp; Скачать</a>
@@ -97,6 +97,20 @@ site.<span class="f">Start</span>()
            Один файл, никаких DLL.</p>
       </div>
       <div class="card">
+        <div class="ico">☕</div>
+        <h3>Разработка на Java</h3>
+        <p><code>Java.Install()</code> скачивает Temurin JDK, дальше
+           <code>Compile</code>, <code>Jar</code> и <code>RunJar</code> собирают
+           и запускают программу — прямо из скрипта на DupoLang.</p>
+      </div>
+      <div class="card">
+        <div class="ico">📂</div>
+        <h3>Файлы под рукой</h3>
+        <p><code>Dupo.System.Files</code> — создание, запись, чтение построчно,
+           замена текста внутри файла, поиск по маске во вложенных папках,
+           zip-архивы.</p>
+      </div>
+      <div class="card">
         <div class="ico">🎨</div>
         <h3>Тёмная среда</h3>
         <p>Подсветка синтаксиса, нумерация строк, дерево проекта с цветами по типам,
@@ -109,7 +123,7 @@ site.<span class="f">Start</span>()
 <section id="lang" style="background:var(--bg-soft);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
   <div class="wrap">
     <h2>Стандартная библиотека</h2>
-    <p class="sub">Четыре модуля — подключаются через <code>import</code>.</p>
+    <p class="sub">Подключаются через <code>import</code> или <code>using</code> — это одно и то же.</p>
 
     <table>
       <tr><th>Модуль</th><th>Что умеет</th></tr>
@@ -117,6 +131,17 @@ site.<span class="f">Start</span>()
         <td><code>Dupo.Web</code></td>
         <td><code>Web.Server</code> · <code>Web.Server.Php</code> · <code>Web.Open</code> ·
             <code>Web.Get</code> · <code>Web.Download</code></td>
+      </tr>
+      <tr>
+        <td><code>Dupo.System.Files</code></td>
+        <td><code>Write</code> · <code>AppendLine</code> · <code>ReadLines</code> ·
+            <code>ReplaceIn</code> · <code>Copy</code> · <code>Rename</code> ·
+            <code>Find</code> · <code>Zip</code></td>
+      </tr>
+      <tr>
+        <td><code>Dupo.Java</code></td>
+        <td><code>Java.Install</code> · <code>Compile</code> · <code>Jar</code> ·
+            <code>Run</code> · <code>RunJar</code> · <code>Build</code> · <code>New</code></td>
       </tr>
       <tr>
         <td><code>Dupo.App</code></td>
@@ -187,7 +212,7 @@ site.<span class="f">Start</span>()
 
 <footer>
   <div class="wrap">
-    <div>Dupo Studio · Winnigames2024-Original</div>
+    <div>Dupo Studio · Winnigames2024</div>
     <div>
       <a href="https://github.com/Winnigames2024-Original/DupoStudio">GitHub</a> ·
       <a href="releases.html">Релизы</a>

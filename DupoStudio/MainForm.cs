@@ -43,6 +43,7 @@ namespace DupoStudio
         void WireUp()
         {
             miNewProject.Click += delegate { NewProject(); };
+            miNewJava.Click += delegate { NewJavaProject(); };
             miOpenProject.Click += delegate { OpenProjectDialog(); };
             miSave.Click += delegate { SaveActive(); };
             miSaveAll.Click += delegate { SaveAll(); };
@@ -58,6 +59,9 @@ namespace DupoStudio
             miPhpInstall.Click += delegate { InstallPhp(); };
             miPhpInfo.Click += delegate { Log("PHP: " + PhpTools.Instance.Version, Theme.Info); };
             miPhpRemove.Click += delegate { RemovePhp(); };
+            miJdkInstall.Click += delegate { InstallJdk(); };
+            miJdkInfo.Click += delegate { Log("Java: " + JavaTools.Instance.Version, Theme.Info); };
+            miJdkRemove.Click += delegate { RemoveJdk(); };
             miBrowser.Click += delegate { OpenBrowser(); };
             miFolder.Click += delegate { if (projectDir != null) Process.Start(projectDir); };
             miAbout.Click += delegate { About(); };
@@ -129,6 +133,65 @@ namespace DupoStudio
             Log("Проект создан: " + dir, Theme.Ok);
         }
 
+        /// <summary>Проект на Java: исходники в src, сборка в .jar скриптом DupoLang.</summary>
+        void NewJavaProject()
+        {
+            string name = PromptDialog.Show(this, "Новый Java-проект", "Название проекта:", "MyJavaApp");
+            if (string.IsNullOrEmpty(name)) return;
+
+            string dir = Path.Combine(DupoRuntime.RuntimeDir, "Projects", name);
+            if (Directory.Exists(dir))
+            {
+                MessageBox.Show(this, "Такой проект уже есть.", "Dupo Studio");
+                return;
+            }
+
+            Directory.CreateDirectory(Path.Combine(dir, "src"));
+
+            var code = new StringBuilder();
+            code.AppendLine("// " + name + " — проект на Java");
+            code.AppendLine("using Dupo.Java");
+            code.AppendLine("using Dupo.System.Files");
+            code.AppendLine();
+            code.AppendLine("print(" + Q + "Собираю " + name + "..." + Q + ")");
+            code.AppendLine();
+            code.AppendLine("if (Java.IsInstalled == false) {");
+            code.AppendLine("    Java.Install()");
+            code.AppendLine("}");
+            code.AppendLine();
+            code.AppendLine("Java.Compile(" + Q + "src" + Q + ", " + Q + "build/classes" + Q + ")");
+            code.AppendLine("string jar = Java.Jar(" + Q + "build/classes" + Q + ", " + Q +
+                            "build/" + name + ".jar" + Q + ", " + Q + "Main" + Q + ")");
+            code.AppendLine();
+            code.AppendLine("print(" + Q + Q + ")");
+            code.AppendLine("print(" + Q + "Запускаю:" + Q + ")");
+            code.AppendLine("Java.RunJar(jar)");
+            code.AppendLine();
+            code.AppendLine("print(" + Q + Q + ")");
+            code.AppendLine("print(" + Q + "Размер: " + Q + " + Files.Size(jar) + " + Q + " байт" + Q + ")");
+
+            File.WriteAllText(Path.Combine(dir, "main.dupolang"), code.ToString(), new UTF8Encoding(false));
+
+            var java = new StringBuilder();
+            java.AppendLine("public class Main {");
+            java.AppendLine("    public static void main(String[] args) {");
+            java.AppendLine("        System.out.println(" + Q + "Привет из " + name + "!" + Q + ");");
+            java.AppendLine();
+            java.AppendLine("        for (int i = 1; i <= 5; i++) {");
+            java.AppendLine("            System.out.println(" + Q + "  строка " + Q + " + i);");
+            java.AppendLine("        }");
+            java.AppendLine("    }");
+            java.AppendLine("}");
+
+            File.WriteAllText(Path.Combine(dir, "src", "Main.java"), java.ToString(), new UTF8Encoding(false));
+
+            OpenProject(dir);
+            OpenFile(Path.Combine(dir, "main.dupolang"));
+            Log("Java-проект создан: " + dir, Theme.Ok);
+            if (!JavaTools.Instance.IsInstalled)
+                Log("JDK ещё не установлен — F5 поставит его сам, либо Инструменты → Установить JDK.", Theme.Dim);
+        }
+
         void OpenProjectDialog()
         {
             using (var dlg = new FolderBrowserDialog())
@@ -191,6 +254,9 @@ namespace DupoStudio
             {
                 case ".dupolang": return Theme.Accent2;
                 case ".dapp": return Theme.Warn;
+                case ".java": return Color.FromArgb(235, 160, 90);
+                case ".jar": return Color.FromArgb(200, 170, 110);
+                case ".class": return Theme.Dim;
                 case ".html": case ".htm": return Color.FromArgb(226, 142, 90);
                 case ".php": return Color.FromArgb(165, 150, 230);
                 case ".css": return Color.FromArgb(120, 170, 220);
@@ -228,6 +294,7 @@ namespace DupoStudio
             host.Dock = DockStyle.Fill;
             CodeEditor editor = host.Editor;
             editor.FilePath = path;
+            editor.JavaMode = path.EndsWith(".java", StringComparison.OrdinalIgnoreCase);
 
             try { editor.Text = File.ReadAllText(path, Encoding.UTF8); }
             catch (Exception ex) { Log("Не открылось: " + ex.Message, Theme.Err); return; }
@@ -381,6 +448,43 @@ namespace DupoStudio
             });
             t.IsBackground = true;
             t.Start();
+        }
+
+        void InstallJdk()
+        {
+            JavaTools.Log = delegate (string s) { Log(s, Theme.Text); };
+
+            if (JavaTools.Instance.IsInstalled)
+            {
+                Log("JDK уже установлен: " + JavaTools.Home, Theme.Ok);
+                Log(JavaTools.Instance.Version, Theme.Dim);
+                return;
+            }
+
+            Log("Ставлю JDK — скачивание около 190 МБ, это займёт несколько минут.", Theme.Info);
+            miJdkInstall.Enabled = false;
+
+            var t = new Thread(delegate ()
+            {
+                try
+                {
+                    JavaTools.Instance.Install();
+                    BeginInvoke(new Action(UpdateJavaStatus));
+                }
+                catch (Exception ex) { Log("✖  JDK не поставился: " + ex.Message, Theme.Err); }
+                finally { BeginInvoke(new Action(delegate { miJdkInstall.Enabled = true; })); }
+            });
+            t.IsBackground = true;
+            t.Start();
+        }
+
+        void RemoveJdk()
+        {
+            JavaTools.Log = delegate (string s) { Log(s, Theme.Text); };
+            if (MessageBox.Show(this, "Удалить установленный JDK?", "Dupo Studio",
+                                MessageBoxButtons.YesNo) != DialogResult.Yes) return;
+            try { JavaTools.Instance.Uninstall(); UpdateJavaStatus(); }
+            catch (Exception ex) { Log(ex.Message, Theme.Err); }
         }
 
         void RemovePhp()
@@ -583,7 +687,7 @@ namespace DupoStudio
             Log("  ╭───────────────────────────────────────────────╮", Theme.Accent);
             Log("  │   D U P O   S T U D I O   ·   App Maker        │", Theme.Accent);
             Log("  ╰───────────────────────────────────────────────╯", Theme.Accent);
-            Log("  DupoLang " + Dupo.Version + "   ·   модули: Dupo.Web · Dupo.IO · Dupo.Sys · Dupo.App", Theme.Dim);
+            Log("  DupoLang " + Dupo.Version + "   ·   Dupo.Web · Dupo.Java · Dupo.System.Files · Dupo.App", Theme.Dim);
             Log("  F5 запуск   ·   Shift+F5 стоп   ·   Ctrl+B один .exe   ·   Ctrl+E .dapp", Theme.Dim);
             Log("", Theme.Text);
             UpdatePhpStatus();
@@ -594,6 +698,14 @@ namespace DupoStudio
             bool ok = PhpTools.Instance.IsInstalled;
             lblPhp.Text = ok ? "PHP готов" : "PHP не установлен";
             lblPhp.ForeColor = ok ? Color.FromArgb(180, 240, 200) : Color.FromArgb(255, 220, 170);
+            UpdateJavaStatus();
+        }
+
+        void UpdateJavaStatus()
+        {
+            bool ok = JavaTools.Instance.IsInstalled;
+            lblJava.Text = ok ? "JDK готов" : "JDK не установлен";
+            lblJava.ForeColor = ok ? Color.FromArgb(180, 240, 200) : Color.FromArgb(255, 220, 170);
         }
 
         void About()

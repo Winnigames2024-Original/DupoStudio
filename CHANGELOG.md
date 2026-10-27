@@ -3,6 +3,23 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
 нумерация по [SemVer](https://semver.org/lang/ru/).
 
+## [1.3.0] — 2026-10-27
+
+### Добавлено
+- **Модуль `Dupo.System.Files`** — создание файлов и управление ими: запись,
+  дозапись, чтение построчно, замена текста внутри файла, копирование,
+  перенос, переименование, размер и дата, работа с папками, поиск по маске
+  во вложенных папках, zip-архивы.
+- **Модуль `Dupo.Java`** — разработка на Java: `Java.Install()` скачивает
+  Temurin JDK с adoptium.net в `runtime\jdk`, затем `Compile`, `Jar`, `Run`,
+  `RunJar` и `Build` собирают и запускают программу.
+- **`using`** работает как синоним `import`.
+- Модуль `Dupo.System` — общая точка входа: `System.Files`, `System.Java`, `System.Sys`.
+- Студия: пункт «Новый Java-проект», установка и удаление JDK в «Инструментах»,
+  подсветка синтаксиса Java в редакторе, индикатор JDK в статус-баре,
+  цвета для `.java`, `.jar` и `.class` в дереве проекта.
+- Примеры `Projects/HelloJava` и `Projects/FilesDemo`.
+
 ## [1.2.0] — 2026-10-27
 
 ### Добавлено
@@ -43,4 +60,5 @@
   вкладки, консоль вывода, F5.
 - `DupoRun` — консольный рантайм.
 
+[1.3.0]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.3.0
 [1.2.0]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.2.0
