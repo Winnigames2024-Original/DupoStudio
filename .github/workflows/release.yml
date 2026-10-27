@@ -87,9 +87,10 @@ jobs:
           Copy-Item "README.md","CHANGELOG.md","LICENSE" "payload" -Force -ErrorAction SilentlyContinue
 
           # Утилиты едут прямо внутри установщика: без сети они просто
-          # распакуются из него и сразу заработают.
-          New-Item -ItemType Directory -Force "payload/runtime/tools" | Out-Null
-          Copy-Item "tools/*" "payload/runtime/tools" -Recurse -Force
+          # распакуются из него и сразу заработают. Папку называем buildtools —
+          # имя runtime упаковщик пропускает намеренно, туда качаются PHP и JDK.
+          New-Item -ItemType Directory -Force "payload/buildtools" | Out-Null
+          Copy-Item "tools/*" "payload/buildtools" -Recurse -Force
 
           $setup = "DupoSetup/bin/Release/net48/DupoSetup.exe"
           if (-not (Test-Path $setup)) { throw "Нет $setup" }
@@ -117,6 +118,15 @@ jobs:
           Write-Host "DupoSetup.exe — $baseKb КБ, с начинкой — $madeKb КБ"
 
           if ($madeKb -le $baseKb + 50) { throw "Начинка не приложилась: было $baseKb КБ, стало $madeKb КБ" }
+
+          # Смотрим внутрь собранного установщика: студия и инструменты
+          # должны быть там на самом деле, а не только по размеру.
+          $inside = & "tools/DupoBuild.exe" --info "DupoStudioSetup.exe" | Out-String
+          Write-Host $inside
+
+          foreach ($must in @("DupoStudio.exe", "buildtools/DupoBuild.exe", "buildtools/DupoLang.exe")) {
+            if (-not $inside.Contains($must)) { throw "В установщике нет $must" }
+          }
 
       # Описание не передаём: текст релиза, написанный вручную, остаётся как был.
       - name: Опубликовать релиз

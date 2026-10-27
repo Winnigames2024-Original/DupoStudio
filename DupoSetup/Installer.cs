@@ -56,6 +56,8 @@ namespace DupoSetup
                 var written = new List<string>();
                 foreach (DappEntry entry in pack.Entries) written.Add(entry.Path);
 
+                MoveBundledTools(targetDir, written);
+
                 // установщик кладём рядом — им же потом удалять
                 string uninstaller = Path.Combine(targetDir, "uninstall.exe");
                 File.Copy(DappBundle.SelfPath(), uninstaller, true);
@@ -91,6 +93,39 @@ namespace DupoSetup
                 Log("Готово: " + targetDir);
             }
             finally { try { File.Delete(temp); } catch { } }
+        }
+
+        /// <summary>
+        /// В начинке инструменты лежат в папке buildtools: имя runtime упаковщик
+        /// пропускает намеренно, чтобы в архив не попадали скачанные PHP и JDK.
+        /// После распаковки переносим их на штатное место.
+        /// </summary>
+        static void MoveBundledTools(string targetDir, List<string> written)
+        {
+            string from = Path.Combine(targetDir, "buildtools");
+            if (!Directory.Exists(from)) return;
+
+            string to = Path.Combine(targetDir, "runtime", "tools");
+            Directory.CreateDirectory(to);
+
+            foreach (string file in Directory.GetFiles(from, "*", SearchOption.AllDirectories))
+            {
+                string rel = file.Substring(from.Length).TrimStart('\\', '/');
+                string target = Path.Combine(to, rel);
+
+                string dir = Path.GetDirectoryName(target);
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                if (File.Exists(target)) File.Delete(target);
+
+                File.Move(file, target);
+
+                written.Remove("buildtools/" + rel.Replace('\\', '/'));
+
+                string moved = "runtime/tools/" + rel.Replace('\\', '/');
+                if (!written.Contains(moved)) written.Add(moved);
+            }
+
+            try { Directory.Delete(from, true); } catch { }
         }
 
         /// <summary>
