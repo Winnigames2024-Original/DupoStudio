@@ -35,8 +35,8 @@ namespace DupoStudio
 
             Load += delegate
             {
-                try { splitMain.SplitterDistance = 260; } catch { }
-                try { splitRight.SplitterDistance = Math.Max(120, splitRight.Height - 230); } catch { }
+                dock.Collapse();
+                RefreshView();
 
                 Banner();
 

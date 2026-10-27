@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -42,14 +44,22 @@ namespace DupoLang
                 if (!File.Exists(ExePath)) return "не установлен";
                 try
                 {
-                    var psi = new ProcessStartInfo(ExePath, "-v");
+                    var psi = new ProcessStartInfo(ExePath, "-n -v");
                     psi.UseShellExecute = false;
                     psi.CreateNoWindow = true;
                     psi.RedirectStandardOutput = true;
+                    psi.RedirectStandardError = true;
                     using (var p = Process.Start(psi))
                     {
-                        string first = p.StandardOutput.ReadLine();
+                        string all = p.StandardOutput.ReadToEnd() + p.StandardError.ReadToEnd();
                         p.WaitForExit(5000);
+
+                        // Предупреждения печатаются раньше версии, поэтому
+                        // ищем нужную строку, а не берём первую попавшуюся.
+                        var m = Regex.Match(all, @"PHP\s+\d+\.\d+\.\d+[^\r\n]*");
+                        if (m.Success) return m.Value.Trim();
+
+                        string first = all.Split('\r', '\n').FirstOrDefault(x => x.Trim().Length > 0);
                         return string.IsNullOrEmpty(first) ? "неизвестно" : first.Trim();
                     }
                 }
@@ -116,17 +126,67 @@ namespace DupoLang
                     json = wc.DownloadString(ReleasesJson);
                 }
 
-                var exact = Regex.Match(json, "php-" + Regex.Escape(branch) + @"\.\d+-nts-Win32-vs\d+-x64\.zip");
-                if (exact.Success) return BaseUrl + exact.Value;
+                // В списке лежат сразу несколько веток, и первая попавшаяся
+                // обычно самая старая — поэтому выбираем наибольшую версию.
+                string best = Newest(json, "php-" + Regex.Escape(branch) + @"\.(\d+)-nts-Win32-vs\d+-x64\.zip");
+                if (best != null) return BaseUrl + best;
 
-                var any = Regex.Match(json, @"php-\d+\.\d+\.\d+-nts-Win32-vs\d+-x64\.zip");
-                if (any.Success) return BaseUrl + any.Value;
+                best = Newest(json, @"php-(\d+)\.(\d+)\.(\d+)-nts-Win32-vs\d+-x64\.zip");
+                if (best != null) return BaseUrl + best;
             }
             catch (Exception ex)
             {
                 Log("Список релизов не прочитался (" + ex.Message + "), беру запасную ссылку.");
             }
             return Fallback;
+        }
+
+        /// <summary>Оставляет только первое включение каждого расширения.</summary>
+        static string NoDuplicateExtensions(string text)
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var lines = text.Replace("\r\n", "\n").Split('\n');
+            var sb = new StringBuilder();
+
+            foreach (string line in lines)
+            {
+                var m = Regex.Match(line, @"^\s*extension\s*=\s*([A-Za-z0-9_\.]+)\s*$");
+                if (m.Success)
+                {
+                    string name = m.Groups[1].Value;
+                    if (name.StartsWith("php_", StringComparison.OrdinalIgnoreCase))
+                        name = name.Substring(4);
+                    if (name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                        name = name.Substring(0, name.Length - 4);
+
+                    if (!seen.Add(name))
+                    {
+                        sb.AppendLine("; " + line.Trim() + "   ; убрано Dupo Studio — дубликат");
+                        continue;
+                    }
+                }
+                sb.AppendLine(line);
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>Имя файла с наибольшей версией среди подходящих под шаблон.</summary>
+        static string Newest(string json, string pattern)
+        {
+            string best = null;
+            long bestKey = -1;
+
+            foreach (Match m in Regex.Matches(json, pattern))
+            {
+                long key = 0;
+                foreach (var digits in Regex.Matches(m.Value, @"\d+").Cast<Match>().Take(3))
+                    key = key * 10000 + long.Parse(digits.Value);
+
+                if (key <= bestKey) continue;
+                bestKey = key;
+                best = m.Value;
+            }
+            return best;
         }
 
         static void WriteIni()
@@ -145,6 +205,10 @@ namespace DupoLang
             foreach (string e in exts)
                 text = Regex.Replace(text, "^;\\s*extension\\s*=\\s*" + e + "\\s*$",
                                      "extension=" + e, RegexOptions.Multiline);
+
+            // В php.ini-development расширения перечислены дважды, и после
+            // раскомментирования PHP ругается «Module already loaded».
+            text = NoDuplicateExtensions(text);
 
             var sb = new StringBuilder(text);
             sb.AppendLine();
