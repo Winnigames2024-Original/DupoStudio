@@ -40,9 +40,10 @@
     border-radius: 12px; transition: border-color .15s, transform .15s;
   }
   .where a:hover { border-color: var(--accent); transform: translateY(-1px); }
-  .where .ico { font-size: 22px; line-height: 1; }
-  .where .what { font-weight: 600; }
-  .where .note { color: var(--dim); font-size: 13.5px; margin-top: 3px; }
+  .where .ico { font-size: 22px; line-height: 1; flex: none; }
+  .where .text { display: block; }
+  .where .what { display: block; font-weight: 600; }
+  .where .note { display: block; color: var(--dim); font-size: 13.5px; margin-top: 3px; }
 
   .hint {
     margin-top: 34px; padding: 16px 18px;
@@ -89,7 +90,7 @@
       <li>
         <a href="/DupoStudio/">
           <span class="ico">🏠</span>
-          <span>
+          <span class="text">
             <span class="what">Главная</span>
             <span class="note">что такое Dupo Studio, язык и формат .dapp</span>
           </span>
@@ -98,7 +99,7 @@
       <li>
         <a href="/DupoStudio/releases/">
           <span class="ico">↓</span>
-          <span>
+          <span class="text">
             <span class="what">Скачать</span>
             <span class="note">установщик, студия одним файлом, BuildTools</span>
           </span>
@@ -107,7 +108,7 @@
       <li>
         <a href="/DupoStudio/release/">
           <span class="ico">📚</span>
-          <span>
+          <span class="text">
             <span class="what">Все версии</span>
             <span class="note">страница каждого выпуска с файлами и исходниками</span>
           </span>
@@ -116,7 +117,7 @@
       <li>
         <a href="/DupoStudio/#lang">
           <span class="ico">📖</span>
-          <span>
+          <span class="text">
             <span class="what">Стандартная библиотека</span>
             <span class="note">модули DupoLang и их команды</span>
           </span>
@@ -125,7 +126,7 @@
       <li>
         <a href="https://github.com/Winnigames2024-Original/DupoStudio/issues">
           <span class="ico">💬</span>
-          <span>
+          <span class="text">
             <span class="what">Сообщить о проблеме</span>
             <span class="note">если сюда привела ссылка с сайта — напишите, поправлю</span>
           </span>
