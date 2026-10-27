@@ -136,6 +136,8 @@ namespace DupoStudio
         /// <summary>Проект на Java: исходники в src, сборка в .jar скриптом DupoLang.</summary>
         void NewJavaProject()
         {
+            const string Q = "\"";   // кавычка внутри генерируемого кода
+
             string name = PromptDialog.Show(this, "Новый Java-проект", "Название проекта:", "MyJavaApp");
             if (string.IsNullOrEmpty(name)) return;
 

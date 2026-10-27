@@ -111,11 +111,11 @@ namespace DupoStudio
                 Select(0, text.Length);
                 SelectionColor = Theme.Text;
 
-                Paint(RxNumber, text, Theme.Number);
-                Paint(JavaMode ? RxJavaKeyword : RxKeyword, text, Theme.Keyword);
-                Paint(JavaMode ? RxJavaType : RxType, text, Theme.TypeName);
-                Paint(RxString, text, Theme.Str);
-                Paint(RxComment, text, Theme.Comment);
+                PaintRx(RxNumber, text, Theme.Number);
+                PaintRx(JavaMode ? RxJavaKeyword : RxKeyword, text, Theme.Keyword);
+                PaintRx(JavaMode ? RxJavaType : RxType, text, Theme.TypeName);
+                PaintRx(RxString, text, Theme.Str);
+                PaintRx(RxComment, text, Theme.Comment);
             }
             finally
             {
@@ -128,7 +128,7 @@ namespace DupoStudio
             }
         }
 
-        void Paint(Regex rx, string text, Color color)
+        void PaintRx(Regex rx, string text, Color color)
         {
             foreach (Match m in rx.Matches(text))
             {
