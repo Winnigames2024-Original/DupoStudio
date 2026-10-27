@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Релизы — Dupo Studio</title>
-<meta name="description" content="Все версии Dupo Studio: собранная студия и исходники в каждом релизе.">
+<meta name="description" content="Скачать Dupo Studio: установщик без прав администратора.">
 <link rel="icon" href="assets/logo.svg">
 <link rel="stylesheet" href="assets/style.css">
 </head>
@@ -28,10 +28,11 @@
 <div class="hero" style="padding-bottom:28px">
   <div class="wrap">
     <div class="badge">Требуется <b>.NET Framework 4.8</b> — уже есть в Windows 10 и 11</div>
-    <h1 style="font-size:clamp(34px,5vw,50px)">Релизы</h1>
+    <h1 style="font-size:clamp(34px,5vw,50px)">Скачать</h1>
     <p class="lead" style="margin-bottom:0">
-      В каждом релизе лежит собранная студия и полные исходники — архивом zip и tar.gz.
-      Собирает GitHub Actions на windows-latest.
+      Установщик ставит студию без прав администратора. Сборщик командной строки
+      студия скачивает с GitHub сама — ссылка ведёт на свежий выпуск, поэтому
+      один архив подходит любой версии.
     </p>
   </div>
 </div>
@@ -42,162 +43,42 @@
     <div id="live"></div>
 
     <div id="fallback">
-
       <div class="rel latest">
         <div class="rel-head">
-          <h3>v1.5.1</h3>
-          <span class="tag new">последняя</span>
-          <span class="tag">студия одним файлом</span>
+          <h3>Последний выпуск</h3>
+          <span class="tag new">установщик</span>
         </div>
-        <p class="date">27 октября 2026</p>
-        <ul>
-          <li><b>Студия раздаётся одним файлом.</b> <code>DupoLang.dll</code> и
-              <code>DupoHost.exe</code> лежат ресурсами внутри
-              <code>DupoStudio.exe</code> — скачал и запустил.</li>
-          <li>Сборка «папкой с файлами» кладёт один exe рядом с исходниками,
-              отдельная DLL больше не нужна.</li>
-        </ul>
+        <p class="date">Список подтянется с GitHub</p>
         <div class="assets">
-          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/releases/latest">
-            <span class="ic">🖥</span><span class="nm">DupoStudio.exe</span>
-            <span class="meta">студия, один файл</span>
+          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/releases/latest/download/DupoStudioSetup.exe">
+            <span class="ic">🖥</span><span class="nm">DupoStudioSetup.exe</span>
+            <span class="meta">установщик</span>
           </a>
-          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/archive/refs/tags/v1.5.1.zip">
-            <span class="ic">📄</span><span class="nm">Source code (zip)</span>
-            <span class="meta">исходники</span>
-          </a>
-        </div>
-      </div>
-
-      <div class="rel">
-        <div class="rel-head">
-          <h3>v1.4.0</h3>
-          <span class="tag">index как в nginx</span>
-        </div>
-        <p class="date">27 октября 2026</p>
-        <ul>
-          <li><b>Главный файл задаётся без расширения</b> — открытая папка отдаёт
-              первый найденный <code>index.html</code>, <code>index.php</code>,
-              <code>index.js</code> вместо ошибки 404.</li>
-          <li>Адрес без расширения пробуется как файл: <code>/about</code> → <code>about.html</code>.</li>
-          <li><code>site.SetIndex(...)</code> задаёт порядок, <code>site.Fallback</code> —
-              режим для приложений на JavaScript.</li>
-        </ul>
-        <div class="assets">
-          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/releases/latest">
-            <span class="ic">🖥</span><span class="nm">DupoStudio-v1.4.0-win-net48.zip</span>
-            <span class="meta">собранная студия</span>
-          </a>
-          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/archive/refs/tags/v1.4.0.zip">
-            <span class="ic">📄</span><span class="nm">Source code (zip)</span>
-            <span class="meta">исходники</span>
+          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/releases">
+            <span class="ic">📦</span><span class="nm">Остальные файлы и исходники</span>
+            <span class="meta">на GitHub</span>
           </a>
         </div>
       </div>
-
-      <div class="rel">
-        <div class="rel-head">
-          <h3>v1.3.0</h3>
-          <span class="tag">Java и файлы</span>
-        </div>
-        <p class="date">27 октября 2026</p>
-        <ul>
-          <li><b>Модуль Dupo.System.Files</b> — создание файлов и управление ими:
-              запись, чтение построчно, замена текста, копирование, поиск по маске, архивы.</li>
-          <li><b>Модуль Dupo.Java</b> — <code>Java.Install()</code> ставит Temurin JDK,
-              дальше компиляция, сборка <code>.jar</code> и запуск.</li>
-          <li><code>using</code> работает как синоним <code>import</code>.</li>
-          <li>Студия: Java-проекты, подсветка Java, индикатор JDK в статус-баре.</li>
-        </ul>
-        <div class="assets">
-          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/releases/latest">
-            <span class="ic">🖥</span><span class="nm">DupoStudio-v1.3.0-win-net48.zip</span>
-            <span class="meta">собранная студия</span>
-          </a>
-          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/archive/refs/tags/v1.3.0.zip">
-            <span class="ic">📄</span><span class="nm">Source code (zip)</span>
-            <span class="meta">исходники</span>
-          </a>
-        </div>
-      </div>
-
-      <div class="rel">
-        <div class="rel-head">
-          <h3>v1.2.0</h3>
-          <span class="tag">сборка в один exe</span>
-        </div>
-        <p class="date">27 октября 2026</p>
-        <ul>
-          <li><b>Сборка проекта в один .exe</b> — рантайм DupoHost с языком внутри,
-              архив дописывается в хвост PE-файла. DLL рядом не нужны.</li>
-          <li>Ключ <code>console: off</code> в манифесте прячет консольное окно.</li>
-          <li>Иконка приложения, нумерация строк в редакторе, цвета файлов в дереве,
-              переделанный статус-бар.</li>
-        </ul>
-        <div class="assets">
-          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/releases/latest">
-            <span class="ic">🖥</span><span class="nm">DupoStudio-v1.2.0-win-net48.zip</span>
-            <span class="meta">собранная студия</span>
-          </a>
-          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/archive/refs/tags/v1.2.0.zip">
-            <span class="ic">📄</span><span class="nm">Source code (zip)</span>
-            <span class="meta">исходники</span>
-          </a>
-          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/archive/refs/tags/v1.2.0.tar.gz">
-            <span class="ic">📄</span><span class="nm">Source code (tar.gz)</span>
-            <span class="meta">исходники</span>
-          </a>
-        </div>
-      </div>
-
-      <div class="rel">
-        <div class="rel-head">
-          <h3>v1.1.0</h3>
-          <span class="tag">формат .dapp</span>
-        </div>
-        <p class="date">27 октября 2026</p>
-        <ul>
-          <li><b>Собственный формат .dapp</b> — сигнатура, манифест, Deflate и CRC32
-              на каждую запись, защита от путей наружу.</li>
-          <li>Модуль <code>Dupo.App</code>: экспорт, импорт, распаковка, паспорт архива.</li>
-          <li>Экспорт и импорт в студии, запуск <code>.dapp</code> напрямую через DupoRun.</li>
-        </ul>
-        <p style="color:var(--dim);font-size:14px;margin:0">Этап разработки — отдельного тега нет, код вошёл в v1.2.0.</p>
-      </div>
-
-      <div class="rel">
-        <div class="rel-head">
-          <h3>v1.0.0</h3>
-          <span class="tag">первый выпуск</span>
-        </div>
-        <p class="date">27 октября 2026</p>
-        <ul>
-          <li><b>Язык DupoLang</b> — лексер, парсер, интерпретатор, мост к .NET через рефлексию.</li>
-          <li>Модули <code>Dupo.Web</code>, <code>Dupo.IO</code>, <code>Dupo.Sys</code>.</li>
-          <li>Веб-сервер со статикой и PHP через CGI, авто-установка PHP.</li>
-          <li>Студия на WinForms: подсветка, дерево проекта, консоль, F5.</li>
-        </ul>
-        <p style="color:var(--dim);font-size:14px;margin:0">Этап разработки — отдельного тега нет, код вошёл в v1.2.0.</p>
-      </div>
-
     </div>
 
     <div class="note" style="margin-top:28px">
-      Antivirus иногда настораживается на свежесобранный неподписанный exe с дописанным
-      хвостом. Для массовой раздачи стоит подписать сертификатом.
+      Antivirus иногда настораживается на свежесобранный неподписанный exe
+      с дописанным хвостом. Для массовой раздачи стоит подписать сертификатом.
     </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <div>Dupo Studio · Winnigames2024</div>
+    <div>Dupo Studio · Winnigames2024-Original</div>
     <div><a href="https://github.com/Winnigames2024-Original/DupoStudio">GitHub</a></div>
   </div>
 </footer>
 
 <script>
-// Если релизы на GitHub уже опубликованы — показываем их вместо статического списка.
+// Список выпусков берём прямо с GitHub. На сайте показываем только установщик —
+// всё остальное доступно по ссылке на страницу выпуска.
 (function () {
   var REPO = "Winnigames2024-Original/DupoStudio";
 
@@ -220,11 +101,12 @@
     });
   }
 
-  function icon(name) {
-    if (/\.(zip|tar\.gz)$/i.test(name) && /source/i.test(name)) return "📄";
-    if (/\.exe$/i.test(name)) return "🖥";
-    if (/\.dapp$/i.test(name)) return "📦";
-    return "⬇";
+  // Минимальная разметка: `код`, **жирный** и ссылки.
+  function md(s) {
+    return s
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+      .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>');
   }
 
   fetch("https://api.github.com/repos/" + REPO + "/releases")
@@ -233,23 +115,26 @@
       if (!list || !list.length) return;
 
       var html = list.map(function (rel, i) {
-        var assets = (rel.assets || []).map(function (a) {
-          return '<a class="asset" href="' + esc(a.browser_download_url) + '">' +
-                 '<span class="ic">' + icon(a.name) + '</span>' +
-                 '<span class="nm">' + esc(a.name) + '</span>' +
-                 '<span class="meta">' + size(a.size) + '</span></a>';
-        });
+        var assets = (rel.assets || [])
+          .filter(function (a) { return /Setup\.exe$/i.test(a.name); })
+          .map(function (a) {
+            return '<a class="asset" href="' + esc(a.browser_download_url) + '">' +
+                   '<span class="ic">🖥</span>' +
+                   '<span class="nm">' + esc(a.name) + '</span>' +
+                   '<span class="meta">' + size(a.size) + '</span></a>';
+          });
 
-        assets.push('<a class="asset" href="' + esc(rel.zipball_url) + '">' +
-          '<span class="ic">📄</span><span class="nm">Source code (zip)</span>' +
-          '<span class="meta">исходники</span></a>');
-        assets.push('<a class="asset" href="' + esc(rel.tarball_url) + '">' +
-          '<span class="ic">📄</span><span class="nm">Source code (tar.gz)</span>' +
-          '<span class="meta">исходники</span></a>');
+        assets.push('<a class="asset" href="' + esc(rel.html_url) + '">' +
+          '<span class="ic">📦</span><span class="nm">Остальные файлы и исходники</span>' +
+          '<span class="meta">на GitHub</span></a>');
 
         var body = esc(rel.body || "").trim().split("\n")
-          .filter(function (s) { return s.trim(); })
-          .map(function (s) { return "<li>" + s.replace(/^[-*]\s*/, "") + "</li>"; })
+          .filter(function (s) {
+            var t = s.trim();
+            return t && !/^#{1,6}\s/.test(t) && !/^\|/.test(t) && t !== "```";
+          })
+          .slice(0, 8)
+          .map(function (s) { return "<li>" + md(s.replace(/^[-*]\s*/, "")) + "</li>"; })
           .join("");
 
         return '<div class="rel' + (i === 0 ? ' latest' : '') + '">' +
@@ -264,7 +149,7 @@
       document.getElementById("live").innerHTML = html;
       document.getElementById("fallback").style.display = "none";
     })
-    .catch(function () { /* оставляем статический список */ });
+    .catch(function () { /* оставляем запасную карточку */ });
 })();
 </script>
 

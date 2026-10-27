@@ -70,6 +70,9 @@ namespace DupoStudio
             miJdkInstall.Click += delegate { InstallJdk(); };
             miJdkInfo.Click += delegate { Log("Java: " + JavaTools.Instance.Version, Theme.Info); };
             miJdkRemove.Click += delegate { RemoveJdk(); };
+            miToolsGet.Click += delegate { GetBuildTools(); };
+            miToolsFolder.Click += delegate { OpenToolsFolder(); };
+            miToolsRemove.Click += delegate { RemoveBuildTools(); };
             miBrowser.Click += delegate { OpenBrowser(); };
             miFolder.Click += delegate { if (projectDir != null) Process.Start(projectDir); };
             miAbout.Click += delegate { About(); };
@@ -366,6 +369,54 @@ namespace DupoStudio
             catch (Exception ex) { Log(ex.Message, Theme.Err); }
         }
 
+        /// <summary>BuildTools качаются с GitHub: ссылка ведёт на свежий выпуск,
+        /// поэтому один архив подходит любой версии студии.</summary>
+        void GetBuildTools()
+        {
+            BuildTools.Log = delegate (string s) { Log(s, Theme.Text); };
+
+            if (BuildTools.Instance.IsInstalled)
+            {
+                Log("BuildTools уже на месте: " + BuildTools.Dir, Theme.Ok);
+                Log(BuildTools.Instance.Version, Theme.Dim);
+
+                if (MessageBox.Show(this, "Скачать заново, взяв свежий выпуск?", "Dupo Studio",
+                                    MessageBoxButtons.YesNo) != DialogResult.Yes) return;
+            }
+
+            Log("Качаю BuildTools...", Theme.Info);
+            miToolsGet.Enabled = false;
+
+            var t = new Thread(delegate ()
+            {
+                try { BuildTools.Instance.Reinstall(); }
+                catch (Exception ex) { Log("✖  Не скачалось: " + ex.Message, Theme.Err); }
+                finally { BeginInvoke(new Action(delegate { miToolsGet.Enabled = true; })); }
+            });
+            t.IsBackground = true;
+            t.Start();
+        }
+
+        void OpenToolsFolder()
+        {
+            if (!BuildTools.Instance.IsInstalled)
+            {
+                Log("BuildTools ещё не скачаны — «Инструменты → Скачать BuildTools».", Theme.Dim);
+                return;
+            }
+            try { Process.Start(BuildTools.Dir); }
+            catch (Exception ex) { Log(ex.Message, Theme.Err); }
+        }
+
+        void RemoveBuildTools()
+        {
+            BuildTools.Log = delegate (string s) { Log(s, Theme.Text); };
+            if (MessageBox.Show(this, "Удалить скачанные BuildTools?", "Dupo Studio",
+                                MessageBoxButtons.YesNo) != DialogResult.Yes) return;
+            try { BuildTools.Instance.Uninstall(); }
+            catch (Exception ex) { Log(ex.Message, Theme.Err); }
+        }
+
         void RemovePhp()
         {
             PhpTools.Log = delegate (string s) { Log(s, Theme.Text); };
@@ -562,7 +613,7 @@ namespace DupoStudio
             Log("  ╭───────────────────────────────────────────────╮", Theme.Accent);
             Log("  │   D U P O   S T U D I O   ·   App Maker        │", Theme.Accent);
             Log("  ╰───────────────────────────────────────────────╯", Theme.Accent);
-            Log("  DupoLang " + Dupo.Version + "   ·   Dupo.Web · Dupo.Java · Dupo.System.Files · Dupo.App", Theme.Dim);
+            Log("  DupoLang " + Dupo.Version + "   ·   Dupo.Web · Dupo.Java · Dupo.System.Files · Dupo.App · Dupo.Tools", Theme.Dim);
             Log("  F5 запуск   ·   Shift+F5 стоп   ·   Ctrl+B один .exe   ·   Ctrl+E .dapp", Theme.Dim);
             Log("", Theme.Text);
             UpdatePhpStatus();

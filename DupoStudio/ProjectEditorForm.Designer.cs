@@ -13,6 +13,7 @@ namespace DupoStudio
         ToolStripMenuItem miRun, miStart, miStop, miBuild, miBuildExe;
         ToolStripMenuItem miTools, miPhpInstall, miPhpInfo, miPhpRemove;
         ToolStripMenuItem miJdkInstall, miJdkInfo, miJdkRemove, miBrowser, miFolder;
+        ToolStripMenuItem miToolsGet, miToolsFolder, miToolsRemove;
         ToolStripMenuItem miHelp, miAbout;
 
         ToolStrip toolMain;
@@ -63,6 +64,9 @@ namespace DupoStudio
             miJdkInstall = new ToolStripMenuItem("Установить JDK (Java)");
             miJdkInfo = new ToolStripMenuItem("Версия Java");
             miJdkRemove = new ToolStripMenuItem("Удалить JDK");
+            miToolsGet = new ToolStripMenuItem("Скачать BuildTools с GitHub");
+            miToolsFolder = new ToolStripMenuItem("Папка BuildTools");
+            miToolsRemove = new ToolStripMenuItem("Удалить BuildTools");
             miBrowser = new ToolStripMenuItem("Открыть в браузере");
             miFolder = new ToolStripMenuItem("Открыть папку проекта");
 
@@ -114,6 +118,7 @@ namespace DupoStudio
             miTools.DropDownItems.AddRange(new ToolStripItem[] {
                 miPhpInstall, miPhpInfo, miPhpRemove, new ToolStripSeparator(),
                 miJdkInstall, miJdkInfo, miJdkRemove, new ToolStripSeparator(),
+                miToolsGet, miToolsFolder, miToolsRemove, new ToolStripSeparator(),
                 miBrowser, miFolder });
 
             miHelp.DropDownItems.Add(miAbout);

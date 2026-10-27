@@ -6,6 +6,23 @@
 Нумерация начата заново с 0.0.1: до этого проект собирался и выкладывался
 под числами 1.2–1.7, но это была разработка, а не выпуски.
 
+## [0.0.3] — 2026-10-27
+
+### Изменено
+- **На сайте только установщик.** Страница релизов показывает
+  `DupoStudioSetup.exe`, остальное — ссылкой на GitHub.
+- **`DupoTools.zip` переименован в `BuildTools.zip`** и больше не привязан
+  к версии: студия качает его по ссылке
+  `releases/latest/download/BuildTools.zip`, поэтому один архив подходит
+  любой версии студии.
+
+### Добавлено
+- Модуль **`Dupo.Tools`**: `Tools.Install()`, `Tools.Build(папка, exe)`,
+  `Tools.ToCSharp(файл, cs)`, `Tools.Info(файл)`, `Tools.IsInstalled`,
+  `Tools.Version`, `Tools.Folder`.
+- В студии: **Инструменты → Скачать BuildTools с GitHub**, «Папка BuildTools»,
+  «Удалить BuildTools».
+
 ## [0.0.2] — 2026-10-27
 
 ### Добавлено
@@ -59,5 +76,6 @@
 - Движок установщика переиспользует формат `.dapp`, так что им же будут
   собираться установщики пользовательских приложений.
 
+[0.0.3]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v0.0.3
 [0.0.2]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v0.0.2
 [0.0.1]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v0.0.1

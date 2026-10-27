@@ -108,8 +108,12 @@ jobs:
           if (-not (Test-Path "tools/HelloWeb.exe")) { throw "DupoBuild.exe не собрал exe" }
           Remove-Item "tools/HelloWeb.exe"
 
-          Compress-Archive -Path "tools/*" -DestinationPath "DupoTools.zip" -Force
-          Write-Host "DupoTools.zip собран"
+          # Архив один на все версии: студия берёт его по ссылке
+          # releases/latest/download/BuildTools.zip.
+          "${{ github.ref_name }}" | Out-File -FilePath "tools/version.txt" -Encoding utf8 -NoNewline
+
+          Compress-Archive -Path "tools/*" -DestinationPath "BuildTools.zip" -Force
+          Write-Host "BuildTools.zip собран"
 
       # Описание не передаём: текст релиза, написанный вручную, остаётся как был.
       - name: Опубликовать релиз
@@ -118,4 +122,4 @@ jobs:
           files: |
             DupoStudioSetup.exe
             DupoStudio.exe
-            DupoTools.zip
+            BuildTools.zip

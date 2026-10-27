@@ -13,7 +13,7 @@ namespace DupoLang
     {
         public static readonly string[] Available =
         {
-            "Dupo.Web", "Dupo.App", "Dupo.Java",
+            "Dupo.Web", "Dupo.App", "Dupo.Java", "Dupo.Tools",
             "Dupo.System.Files", "Dupo.System", "Dupo.IO", "Dupo.Sys"
         };
 
@@ -26,6 +26,7 @@ namespace DupoLang
                 case "Dupo.Sys": return Sys();
                 case "Dupo.App": return App(interp);
                 case "Dupo.Java": return Java(interp);
+                case "Dupo.Tools": return Tools(interp);
                 case "Dupo.System.Files": return Files(interp);
                 case "Dupo.System": return SystemNs(interp);
             }
@@ -121,6 +122,17 @@ namespace DupoLang
             var ns = new NativeNamespace("Java");
             ns.Target = JavaTools.Instance;
             ns.Backing = typeof(JavaTools);
+            return ns;
+        }
+
+        // ---------------- Dupo.Tools ----------------
+        static NativeNamespace Tools(Interp interp)
+        {
+            BuildTools.Log = interp.Print;
+
+            var ns = new NativeNamespace("Tools");
+            ns.Target = BuildTools.Instance;
+            ns.Backing = typeof(BuildTools);
             return ns;
         }
 
