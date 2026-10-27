@@ -3,6 +3,16 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
 нумерация по [SemVer](https://semver.org/lang/ru/).
 
+## [1.5.1] — 2026-10-27
+
+### Исправлено
+- Рантайм не попадал внутрь `DupoStudio.exe`: ресурсы добавлялись на
+  `BeforeTargets="CoreCompile"`, а MSBuild выполняет зависимости цели раньше
+  хуков `BeforeTargets`, поэтому список ресурсов к тому моменту уже собран.
+  Теперь цепляемся к `AssignTargetPaths` — началу ресурсной цепочки.
+- Обе сборки проверяют результат по именам вшитых ресурсов прямо в байтах
+  файла, так что пустой exe в релиз больше не уедет.
+
 ## [1.5.0] — 2026-10-27
 
 ### Изменено
@@ -90,6 +100,7 @@
   вкладки, консоль вывода, F5.
 - `DupoRun` — консольный рантайм.
 
+[1.5.1]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.5.1
 [1.5.0]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.5.0
 [1.4.0]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.4.0
 [1.3.0]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.3.0
