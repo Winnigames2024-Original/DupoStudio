@@ -8,7 +8,7 @@ namespace DupoLang
     /// <summary>Точка входа: запуск кода на DupoLang.</summary>
     public static class Dupo
     {
-        public const string Version = "1.7";
+        public const string Version = "0.0.1";
 
         public static Interp RunFile(string path, Action<string> print)
         {

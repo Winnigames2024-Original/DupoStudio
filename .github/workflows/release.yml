@@ -34,8 +34,6 @@ jobs:
           $kb = [math]::Round((Get-Item "DupoStudio.exe").Length / 1KB)
           Write-Host "DupoStudio.exe — $kb КБ"
 
-          # Имена вшитых ресурсов хранятся в метаданных сборки обычными строками,
-          # так что достаточно поискать их в байтах файла.
           $bytes = [System.IO.File]::ReadAllBytes("DupoStudio.exe")
           $text  = [System.Text.Encoding]::UTF8.GetString($bytes)
 
@@ -46,9 +44,44 @@ jobs:
 
           if ($kb -lt 250) { throw "Подозрительно мало — всего $kb КБ" }
 
-      # Описание не передаём: текст релиза, написанный вручную, остаётся как был —
-      # прикладывается только сам exe. Исходники GitHub добавляет сам.
+      - name: Собрать установщик
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          if (-not $version) { $version = "0.0.1" }
+
+          New-Item -ItemType Directory -Force "payload" | Out-Null
+          Copy-Item "DupoStudio.exe" "payload/DupoStudio.exe"
+          Copy-Item "Projects" "payload/Projects" -Recurse -Force
+          Copy-Item "README.md","CHANGELOG.md","LICENSE" "payload" -Force -ErrorAction SilentlyContinue
+
+          $setup = "DupoSetup/bin/Release/net48/DupoSetup.exe"
+          if (-not (Test-Path $setup)) { throw "Нет $setup" }
+
+          # DupoSetup — оконное приложение, поэтому ждём завершения явно.
+          $args = @(
+            "/pack", "payload", "$PWD\DupoStudioSetup.exe",
+            "name=Dupo Studio",
+            "version=$version",
+            "publisher=Winnigames2024",
+            "folder=DupoStudio",
+            "exe=DupoStudio.exe",
+            "shortcut=Dupo Studio",
+            "desktop=1",
+            "assoc=.dupolang,.dapp"
+          )
+          $p = Start-Process -FilePath $setup -ArgumentList $args -NoNewWindow -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Сборка установщика вернула $($p.ExitCode)" }
+
+          if (-not (Test-Path "DupoStudioSetup.exe")) { throw "Установщик не собрался" }
+          $kb = [math]::Round((Get-Item "DupoStudioSetup.exe").Length / 1KB)
+          Write-Host "DupoStudioSetup.exe — $kb КБ"
+          if ($kb -lt 400) { throw "Установщик без начинки — всего $kb КБ" }
+
+      # Описание не передаём: текст релиза, написанный вручную, остаётся как был.
       - name: Опубликовать релиз
         uses: softprops/action-gh-release@v2
         with:
-          files: DupoStudio.exe
+          files: |
+            DupoStudioSetup.exe
+            DupoStudio.exe

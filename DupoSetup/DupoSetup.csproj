@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>7.3</LangVersion>
+    <AssemblyName>DupoSetup</AssemblyName>
+    <RootNamespace>DupoSetup</RootNamespace>
+    <CodePage>65001</CodePage>
+    <ApplicationIcon>..\DupoStudio\Resources\dupo.ico</ApplicationIcon>
+    <Version>0.0.1</Version>
+    <Product>Dupo Setup</Product>
+    <Company>Winnigames2024</Company>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+
+  <!-- Язык вкомпилирован прямо в установщик: формат .dapp и дописывание
+       в хвост exe берутся оттуда, и DupoLang.dll рядом не нужна. -->
+  <ItemGroup>
+    <Compile Include="..\DupoLang\**\*.cs"
+             Exclude="..\DupoLang\bin\**\*.cs;..\DupoLang\obj\**\*.cs"
+             LinkBase="DupoLang" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+  </ItemGroup>
+
+</Project>
