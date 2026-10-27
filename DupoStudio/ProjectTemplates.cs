@@ -385,7 +385,7 @@ namespace DupoStudio
                  "Из кода они видны как Resources.имя — подсказка их знает.\r\n");
         }
 
-        static void CsLibrary(string dir, string name)        static void CsLibrary(string dir, string name)
+        static void CsLibrary(string dir, string name)
         {
             string ns = Ident(name);
 
