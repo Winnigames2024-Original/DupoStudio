@@ -28,9 +28,14 @@
 
   <!-- DupoLang.dll и DupoHost.exe уезжают ресурсами внутрь DupoStudio.exe,
        чтобы студия раздавалась одним файлом. -->
-  <!-- PrepareResources, а не CoreCompile: к моменту CoreCompile список ресурсов
-       уже разобран, и добавленное туда внутрь exe не попадает. -->
-  <Target Name="EmbedRuntime" BeforeTargets="PrepareResources">
+  <!-- Цепляемся к AssignTargetPaths — это самое начало работы с ресурсами.
+       BeforeTargets у PrepareResources или CoreCompile не годится: MSBuild
+       выполняет зависимости цели раньше, чем хуки BeforeTargets, поэтому список
+       ресурсов к тому моменту уже собран и добавленное в него не попадает.
+       DependsOnTargets гарантирует, что DupoLang и DupoHost уже собраны. -->
+  <Target Name="EmbedRuntime"
+          BeforeTargets="AssignTargetPaths"
+          DependsOnTargets="ResolveProjectReferences">
     <PropertyGroup>
       <LangDll>..\DupoLang\bin\$(Configuration)\net48\DupoLang.dll</LangDll>
       <HostExe>..\DupoHost\bin\$(Configuration)\net48\DupoHost.exe</HostExe>
@@ -45,6 +50,7 @@
         <LogicalName>DupoStudio.Embedded.DupoHost.exe</LogicalName>
       </EmbeddedResource>
     </ItemGroup>
+    <Message Importance="high" Text="Вшиваю в DupoStudio.exe: $(LangDll) и $(HostExe)" />
   </Target>
 
   <Target Name="CopyDupoHost" AfterTargets="Build">
