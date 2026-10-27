@@ -60,6 +60,8 @@ namespace DupoHost
                     script = DappPackage.ExtractToTemp(script);
                 }
 
+                if (script == null) script = FindDefaultScript();
+
                 if (script == null || !File.Exists(script))
                 {
                     Console.WriteLine("DupoHost " + Dupo.Version + " — рантайм собранных приложений.");
@@ -104,6 +106,21 @@ namespace DupoHost
             }
 
             return 0;
+        }
+
+        /// <summary>Скрипт рядом с exe — для сборки «папкой с файлами».</summary>
+        static string FindDefaultScript()
+        {
+            string dir = AppDomain.CurrentDomain.BaseDirectory;
+
+            string main = Path.Combine(dir, "main.dupolang");
+            if (File.Exists(main)) return main;
+
+            string[] scripts = Directory.GetFiles(dir, "*.dupolang");
+            if (scripts.Length > 0) return scripts[0];
+
+            string[] packs = Directory.GetFiles(dir, "*" + DappPackage.Extension);
+            return packs.Length > 0 ? packs[0] : null;
         }
     }
 }

@@ -10,7 +10,7 @@
     <CodePage>65001</CodePage>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <ApplicationIcon>Resources\dupo.ico</ApplicationIcon>
-    <Version>1.4.0</Version>
+    <Version>1.5.0</Version>
     <Product>Dupo Studio</Product>
     <Company>Winnigames2024</Company>
   </PropertyGroup>
@@ -25,6 +25,25 @@
       <Private>false</Private>
     </ProjectReference>
   </ItemGroup>
+
+  <!-- DupoLang.dll и DupoHost.exe уезжают ресурсами внутрь DupoStudio.exe,
+       чтобы студия раздавалась одним файлом. -->
+  <Target Name="EmbedRuntime" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <LangDll>..\DupoLang\bin\$(Configuration)\net48\DupoLang.dll</LangDll>
+      <HostExe>..\DupoHost\bin\$(Configuration)\net48\DupoHost.exe</HostExe>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(LangDll)')" Text="Сначала должен собраться DupoLang: $(LangDll)" />
+    <Error Condition="!Exists('$(HostExe)')" Text="Сначала должен собраться DupoHost: $(HostExe)" />
+    <ItemGroup>
+      <EmbeddedResource Include="$(LangDll)">
+        <LogicalName>DupoStudio.Embedded.DupoLang.dll</LogicalName>
+      </EmbeddedResource>
+      <EmbeddedResource Include="$(HostExe)">
+        <LogicalName>DupoStudio.Embedded.DupoHost.exe</LogicalName>
+      </EmbeddedResource>
+    </ItemGroup>
+  </Target>
 
   <Target Name="CopyDupoHost" AfterTargets="Build">
     <Copy SourceFiles="..\DupoHost\bin\$(Configuration)\net48\DupoHost.exe"

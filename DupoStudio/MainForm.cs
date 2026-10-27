@@ -516,10 +516,10 @@ namespace DupoStudio
             DappPackage.Log = delegate (string s) { Log(s, Theme.Text); };
             DappBundle.Log = delegate (string s) { Log(s, Theme.Text); };
 
-            string host = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DupoHost.exe");
-            if (!File.Exists(host))
+            string host = EmbeddedRuntime.HostPath();
+            if (host == null)
             {
-                Log("Не нашёл DupoHost.exe рядом со студией — соберите проект DupoHost.", Theme.Err);
+                Log("Рантайм DupoHost не найден ни рядом со студией, ни внутри неё.", Theme.Err);
                 return;
             }
 
@@ -565,7 +565,6 @@ namespace DupoStudio
             SaveAll();
             string name = Path.GetFileName(projectDir);
             string outDir = Path.Combine(projectDir, "build");
-            string appDir = AppDomain.CurrentDomain.BaseDirectory;
 
             try
             {
@@ -574,21 +573,18 @@ namespace DupoStudio
 
                 CopyTree(projectDir, outDir);
 
-                string runner = Path.Combine(appDir, "DupoRun.exe");
-                if (!File.Exists(runner))
+                string runner = EmbeddedRuntime.HostPath();
+                if (runner == null)
                 {
-                    Log("Не нашёл DupoRun.exe рядом со студией — соберите проект DupoRun.", Theme.Err);
+                    Log("Рантайм DupoHost не найден ни рядом со студией, ни внутри неё.", Theme.Err);
                     return;
                 }
 
+                // В рантайме язык уже внутри, отдельная DupoLang.dll не нужна.
                 File.Copy(runner, Path.Combine(outDir, name + ".exe"), true);
-                File.Copy(Path.Combine(appDir, "DupoLang.dll"), Path.Combine(outDir, "DupoLang.dll"), true);
-
-                string cfg = Path.Combine(appDir, "DupoRun.exe.config");
-                if (File.Exists(cfg)) File.Copy(cfg, Path.Combine(outDir, name + ".exe.config"), true);
 
                 Log("Собрано: " + Path.Combine(outDir, name + ".exe"), Theme.Ok);
-                Log("Папка build готова к раздаче.", Theme.Dim);
+                Log("Рядом лежат исходники — код видно и можно править.", Theme.Dim);
                 RefreshTree();
             }
             catch (Exception ex) { Log("✖  Сборка не удалась: " + ex.Message, Theme.Err); }

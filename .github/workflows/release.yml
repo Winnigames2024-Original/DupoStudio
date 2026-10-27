@@ -24,22 +24,23 @@ jobs:
       - name: Собрать
         run: msbuild DupoApp.sln /p:Configuration=Release /m
 
-      - name: Собрать архив
+      - name: Проверить, что студия — один файл
         shell: pwsh
         run: |
-          $v = "${{ github.ref_name }}"
-          if (-not $v) { $v = "dev" }
-          $dist = "dist/DupoStudio"
-          New-Item -ItemType Directory -Force $dist | Out-Null
-          Copy-Item "DupoStudio/bin/Release/net48/*" $dist -Recurse -Force
-          Copy-Item "Projects" "$dist/Projects" -Recurse -Force
-          Copy-Item "README.md","CHANGELOG.md","LICENSE" $dist -Force -ErrorAction SilentlyContinue
-          Compress-Archive -Path "$dist/*" -DestinationPath "DupoStudio-$v-win-net48.zip" -Force
-          Get-ChildItem *.zip | Format-Table Name, Length
+          $exe = "DupoStudio/bin/Release/net48/DupoStudio.exe"
+          if (-not (Test-Path $exe)) { throw "Нет $exe" }
+          Copy-Item $exe "DupoStudio.exe"
 
-      # Описание не передаём: если релиз уже создан вручную, его текст остаётся как был,
-      # а экшен только прикладывает архив со сборкой.
+          $kb = [math]::Round((Get-Item "DupoStudio.exe").Length / 1KB)
+          Write-Host "DupoStudio.exe — $kb КБ"
+
+          # Внутри лежат DupoLang.dll и DupoHost.exe, так что меньше 200 КБ быть не может:
+          # если меньше — ресурсы не вшились, и на чужой машине exe не запустится.
+          if ($kb -lt 200) { throw "Рантайм не попал внутрь exe (всего $kb КБ)" }
+
+      # Описание не передаём: текст релиза, написанный вручную, остаётся как был —
+      # прикладывается только сам exe. Исходники GitHub добавляет сам.
       - name: Опубликовать релиз
         uses: softprops/action-gh-release@v2
         with:
-          files: DupoStudio-*.zip
+          files: DupoStudio.exe

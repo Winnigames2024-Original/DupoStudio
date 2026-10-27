@@ -3,6 +3,17 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
 нумерация по [SemVer](https://semver.org/lang/ru/).
 
+## [1.5.0] — 2026-10-27
+
+### Изменено
+- **Студия раздаётся одним файлом.** `DupoLang.dll` и `DupoHost.exe` лежат
+  ресурсами внутри `DupoStudio.exe`: библиотека подхватывается из ресурса при
+  загрузке, рантайм распаковывается на диск только когда нужно собрать
+  приложение. В релизе теперь сам `DupoStudio.exe`, а не архив.
+- Сборка «папкой с файлами» кладёт один exe рядом с исходниками —
+  отдельная `DupoLang.dll` больше не нужна.
+- `DupoHost` без вшитого приложения ищет `main.dupolang` или `.dapp` рядом с собой.
+
 ## [1.4.0] — 2026-10-27
 
 ### Добавлено
@@ -79,6 +90,7 @@
   вкладки, консоль вывода, F5.
 - `DupoRun` — консольный рантайм.
 
+[1.5.0]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.5.0
 [1.4.0]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.4.0
 [1.3.0]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.3.0
 [1.2.0]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.2.0
