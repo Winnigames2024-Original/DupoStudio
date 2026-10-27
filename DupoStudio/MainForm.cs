@@ -106,7 +106,7 @@ namespace DupoStudio
             ForeColor = Theme.Text;
             menu.BackColor = Theme.Chrome;
             menu.ForeColor = Theme.Text;
-            welcome.BackColor = Theme.Back;
+            welcome.Restyle();
             Theme.PaintBackground(this);
             RefreshRecent();
         }
