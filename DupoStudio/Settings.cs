@@ -19,6 +19,8 @@ namespace DupoStudio
 
         /// <summary>Название темы оформления.</summary>
         public static string ThemeName = "Тёмная";
+        /// <summary>Встроенная палитра-основа для своей темы на C#.</summary>
+        public static string ThemeBase = "Тёмная";
 
         public static string FilePath
         {
@@ -39,7 +41,13 @@ namespace DupoStudio
             }
             catch { }
 
-            Theme.Apply(ThemeName);
+            if (string.Equals(ThemeName, "Своя", StringComparison.OrdinalIgnoreCase))
+            {
+                Theme.Apply(ThemeBase);
+                try { ThemeScript.Apply(null); }
+                catch { Theme.Apply(ThemeBase); }   // файл сломан — остаёмся на основе
+            }
+            else Theme.Apply(ThemeName);
         }
 
         static void Read()
@@ -59,6 +67,7 @@ namespace DupoStudio
                     if (key == "autostart") Autostart = value;
                     else if (key == "dontask") DontAsk = value == "1" || value == "true";
                     else if (key == "theme" && value.Length > 0) ThemeName = value;
+                    else if (key == "themebase" && value.Length > 0) ThemeBase = value;
                 }
             }
             catch { }
@@ -75,6 +84,7 @@ namespace DupoStudio
                 lines.Add("autostart=" + (Autostart ?? ""));
                 lines.Add("dontask=" + (DontAsk ? "1" : "0"));
                 lines.Add("theme=" + (ThemeName ?? ""));
+                lines.Add("themebase=" + (ThemeBase ?? ""));
 
                 File.WriteAllLines(FilePath, lines.ToArray(), new UTF8Encoding(false));
             }

@@ -90,6 +90,26 @@ namespace DupoStudio
                 "Окно на чистом WinAPI: CreateWindowEx и цикл сообщений, " +
                 "сборка с -mwindows, без консоли."),
 
+            new ProjectTemplate("cpp-library", "C++", "C++",
+                "Библиотека (.dll)", "MyCppLib",
+                "Библиотека на C++: собирается через -shared в .dll, которую можно " +
+                "подключать и из C#, и из других программ на C++."),
+
+            new ProjectTemplate("python-console", "Python", "Python",
+                "Консольное приложение", "MyPyApp",
+                "Python: main.py и запуск через свой переносимый интерпретатор. " +
+                "Python ставится сам командой Python.Install() — в систему ничего не прописывается."),
+
+            new ProjectTemplate("python-package", "Python", "Python",
+                "Приложение с пакетами (pip)", "MyPyPackages",
+                "То же, что консольное, плюс requirements.txt: пакеты ставятся через " +
+                "Python.Pip в свой site-packages, а не в системный Python."),
+
+            new ProjectTemplate("python-dupolang", "Python", "Python + DupoLang",
+                "Приложение Python + DupoLang", "MyPyDupoApp",
+                "Python и DupoLang вместе: main.dupolang собирает данные и зовёт " +
+                "скрипты через Python.Run, а Python.Build делает из них один .exe."),
+
             new ProjectTemplate("java", "Java", "Java",
                 "Приложение Java", "MyJavaApp",
                 "Java: исходники в src, компиляция и сборка .jar. " +

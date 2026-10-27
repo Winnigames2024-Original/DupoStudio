@@ -52,6 +52,10 @@ namespace DupoStudio
                     case "winforms-dupolang": FormsWithDupo(dir, name); break;
                     case "cpp-console": CppConsole(dir, name); break;
                     case "cpp-window": CppWindow(dir, name); break;
+                    case "cpp-library": CppLibrary(dir, name); break;
+                    case "python-console": PyConsole(dir, name); break;
+                    case "python-package": PyPackages(dir, name); break;
+                    case "python-dupolang": PyWithDupo(dir, name); break;
                     case "java": Java(dir, name); break;
                     case "setup": Setup(dir, name); break;
                     default: ConsoleApp(dir, name); break;
@@ -549,6 +553,213 @@ namespace DupoStudio
             {
                 code.AppendLine("print(" + Q + "Готово: " + Q + " + exe)");
             }
+            return code.ToString();
+        }
+
+
+        static void CppLibrary(string dir, string name)
+        {
+            string ident = Ident(name);
+
+            var h = new StringBuilder();
+            h.AppendLine("#pragma once");
+            h.AppendLine();
+            h.AppendLine("// Всё, что видно снаружи .dll, помечается EXPORT.");
+            h.AppendLine("#ifdef __cplusplus");
+            h.AppendLine("#define EXPORT extern \"C\" __declspec(dllexport)");
+            h.AppendLine("#else");
+            h.AppendLine("#define EXPORT __declspec(dllexport)");
+            h.AppendLine("#endif");
+            h.AppendLine();
+            h.AppendLine("EXPORT int " + ident + "_Add(int a, int b);");
+            h.AppendLine("EXPORT const char* " + ident + "_Hello(void);");
+            Save(dir, Path.Combine("src", ident + ".h"), h.ToString());
+
+            var cpp = new StringBuilder();
+            cpp.AppendLine("#include \"" + ident + ".h\"");
+            cpp.AppendLine();
+            cpp.AppendLine("EXPORT int " + ident + "_Add(int a, int b)");
+            cpp.AppendLine("{");
+            cpp.AppendLine("    return a + b;");
+            cpp.AppendLine("}");
+            cpp.AppendLine();
+            cpp.AppendLine("EXPORT const char* " + ident + "_Hello(void)");
+            cpp.AppendLine("{");
+            cpp.AppendLine("    return \"Привет из " + name + "!\";");
+            cpp.AppendLine("}");
+            Save(dir, Path.Combine("src", "library.cpp"), cpp.ToString());
+
+            var code = new StringBuilder();
+            code.AppendLine("// " + name + " — библиотека на C++");
+            code.AppendLine("using Dupo.Cpp");
+            code.AppendLine();
+            code.AppendLine("if (Cpp.IsInstalled == false) {");
+            code.AppendLine("    print(" + Q + "Компилятора нет — скачиваю MinGW-w64..." + Q + ")");
+            code.AppendLine("    Cpp.Install()");
+            code.AppendLine("}");
+            code.AppendLine();
+            code.AppendLine("string dll = Cpp.Library(" + Q + "src" + Q + ", " +
+                            Q + "build/" + name + ".dll" + Q + ")");
+            code.AppendLine("print(" + Q + "Собрано: " + Q + " + dll)");
+            code.AppendLine();
+            code.AppendLine("// Подключить из C#:");
+            code.AppendLine("//   [DllImport(" + Q + name + ".dll" + Q + ")]");
+            code.AppendLine("//   static extern int " + ident + "_Add(int a, int b);");
+            Save(dir, "main.dupolang", code.ToString());
+        }
+
+        // ------------------------------------------------------------------
+        // Python
+        // ------------------------------------------------------------------
+
+        static void PyConsole(string dir, string name)
+        {
+            Save(dir, Path.Combine("src", "main.py"), PyMain(name));
+            Save(dir, "main.dupolang", PyScript(name, false));
+        }
+
+        static void PyPackages(string dir, string name)
+        {
+            Save(dir, Path.Combine("src", "main.py"), PyMainWithPackage(name));
+            Save(dir, "requirements.txt",
+                 "# Пакеты для " + name + " — ставятся в свой site-packages." + Environment.NewLine +
+                 "requests" + Environment.NewLine);
+            Save(dir, "main.dupolang", PyScript(name, true));
+        }
+
+        static void PyWithDupo(string dir, string name)
+        {
+            Save(dir, Path.Combine("src", "main.py"), PyFromDupo(name));
+
+            var code = new StringBuilder();
+            code.AppendLine("// " + name + " — DupoLang готовит данные, Python их считает");
+            code.AppendLine("using Dupo.Python");
+            code.AppendLine();
+            code.AppendLine("if (Python.IsInstalled == false) {");
+            code.AppendLine("    print(" + Q + "Python не найден — ставлю переносимый..." + Q + ")");
+            code.AppendLine("    Python.Install()");
+            code.AppendLine("}");
+            code.AppendLine();
+            code.AppendLine("print(" + Q + "Python: " + Q + " + Python.Version)");
+            code.AppendLine("print(" + Q + Q + ")");
+            code.AppendLine();
+            code.AppendLine("// Передаём аргументы скрипту и читаем, что он напечатал.");
+            code.AppendLine("string answer = Python.Run(" + Q + "src/main.py" + Q + ", " +
+                            Q + "2 3 5 8 13" + Q + ")");
+            code.AppendLine("print(answer)");
+            code.AppendLine();
+            code.AppendLine("// Отсюда же собирается один .exe:");
+            code.AppendLine("//   Python.Build(" + Q + "src/main.py" + Q + ", " +
+                            Q + "build" + Q + ")");
+            Save(dir, "main.dupolang", code.ToString());
+        }
+
+        static string PyMain(string name)
+        {
+            var py = new StringBuilder();
+            py.AppendLine("# -*- coding: utf-8 -*-");
+            py.AppendLine("\"\"\"" + name + " — точка входа.\"\"\"");
+            py.AppendLine();
+            py.AppendLine("import sys");
+            py.AppendLine();
+            py.AppendLine();
+            py.AppendLine("def main(argv):");
+            py.AppendLine("    print(\"Привет из " + name + "!\")");
+            py.AppendLine("    print(\"Python\", sys.version.split()[0])");
+            py.AppendLine();
+            py.AppendLine("    for i in range(1, 6):");
+            py.AppendLine("        print(\"  строка\", i)");
+            py.AppendLine();
+            py.AppendLine("    return 0");
+            py.AppendLine();
+            py.AppendLine();
+            py.AppendLine("if __name__ == \"__main__\":");
+            py.AppendLine("    sys.exit(main(sys.argv[1:]))");
+            return py.ToString();
+        }
+
+        static string PyMainWithPackage(string name)
+        {
+            var py = new StringBuilder();
+            py.AppendLine("# -*- coding: utf-8 -*-");
+            py.AppendLine("\"\"\"" + name + " — пример со сторонним пакетом.\"\"\"");
+            py.AppendLine();
+            py.AppendLine("import sys");
+            py.AppendLine();
+            py.AppendLine("try:");
+            py.AppendLine("    import requests");
+            py.AppendLine("except ImportError:");
+            py.AppendLine("    requests = None");
+            py.AppendLine();
+            py.AppendLine();
+            py.AppendLine("def main(argv):");
+            py.AppendLine("    print(\"Привет из " + name + "!\")");
+            py.AppendLine();
+            py.AppendLine("    if requests is None:");
+            py.AppendLine("        print(\"requests не стоит — выполните Python.Pip(\\\"install -r requirements.txt\\\")\")");
+            py.AppendLine("        return 1");
+            py.AppendLine();
+            py.AppendLine("    print(\"requests\", requests.__version__)");
+            py.AppendLine("    return 0");
+            py.AppendLine();
+            py.AppendLine();
+            py.AppendLine("if __name__ == \"__main__\":");
+            py.AppendLine("    sys.exit(main(sys.argv[1:]))");
+            return py.ToString();
+        }
+
+        static string PyFromDupo(string name)
+        {
+            var py = new StringBuilder();
+            py.AppendLine("# -*- coding: utf-8 -*-");
+            py.AppendLine("\"\"\"" + name + " — считает то, что передал DupoLang.\"\"\"");
+            py.AppendLine();
+            py.AppendLine("import sys");
+            py.AppendLine();
+            py.AppendLine();
+            py.AppendLine("def main(argv):");
+            py.AppendLine("    numbers = [float(x) for x in argv if x.strip()]");
+            py.AppendLine();
+            py.AppendLine("    if not numbers:");
+            py.AppendLine("        print(\"Нечего считать: передайте числа аргументами.\")");
+            py.AppendLine("        return 1");
+            py.AppendLine();
+            py.AppendLine("    print(\"чисел:  \", len(numbers))");
+            py.AppendLine("    print(\"сумма:  \", sum(numbers))");
+            py.AppendLine("    print(\"среднее:\", sum(numbers) / len(numbers))");
+            py.AppendLine("    print(\"максимум\", max(numbers))");
+            py.AppendLine("    return 0");
+            py.AppendLine();
+            py.AppendLine();
+            py.AppendLine("if __name__ == \"__main__\":");
+            py.AppendLine("    sys.exit(main(sys.argv[1:]))");
+            return py.ToString();
+        }
+
+        static string PyScript(string name, bool packages)
+        {
+            var code = new StringBuilder();
+            code.AppendLine("// " + name + " — приложение на Python");
+            code.AppendLine("using Dupo.Python");
+            code.AppendLine();
+            code.AppendLine("if (Python.IsInstalled == false) {");
+            code.AppendLine("    print(" + Q + "Python не найден — ставлю переносимый..." + Q + ")");
+            code.AppendLine("    Python.Install()");
+            code.AppendLine("}");
+            code.AppendLine();
+            code.AppendLine("print(" + Q + "Python: " + Q + " + Python.Version)");
+            if (packages)
+            {
+                code.AppendLine();
+                code.AppendLine("// Пакеты из requirements.txt — в свой site-packages.");
+                code.AppendLine("Python.Pip(" + Q + "install -r requirements.txt" + Q + ")");
+            }
+            code.AppendLine("print(" + Q + Q + ")");
+            code.AppendLine();
+            code.AppendLine("Python.Run(" + Q + "src/main.py" + Q + ")");
+            code.AppendLine();
+            code.AppendLine("// Один .exe из скрипта (нужен PyInstaller, ставится сам):");
+            code.AppendLine("//   Python.Build(" + Q + "src/main.py" + Q + ", " + Q + "build" + Q + ")");
             return code.ToString();
         }
 

@@ -14,7 +14,7 @@ namespace DupoLang
         public static readonly string[] Available =
         {
             "Dupo.Web", "Dupo.App", "Dupo.Java", "Dupo.Tools", "Dupo.Resources",
-            "Dupo.Services", "Dupo.CSharp", "Dupo.Cpp",
+            "Dupo.Services", "Dupo.CSharp", "Dupo.Cpp", "Dupo.Python",
             "Dupo.Data", "Dupo.Json", "Dupo.Text", "Dupo.Lang", "Dupo.Forms",
             "Dupo.System.Files", "Dupo.System", "Dupo.IO", "Dupo.Sys"
         };
@@ -33,6 +33,7 @@ namespace DupoLang
                 case "Dupo.Services": return ServicesNs(interp);
                 case "Dupo.CSharp": return CSharpNs(interp);
                 case "Dupo.Cpp": return CppNs(interp);
+                case "Dupo.Python": return PythonNs(interp);
                 case "Dupo.Data": return DataNs(interp);
                 case "Dupo.Json": return JsonNs(interp);
                 case "Dupo.Text": return TextNs(interp);
@@ -247,6 +248,17 @@ namespace DupoLang
 
             var ns = new NativeNamespace("Lang");
             ns.Backing = typeof(LangBridge);
+            return ns;
+        }
+
+        // ---------------- Dupo.Python ----------------
+        static NativeNamespace PythonNs(Interp interp)
+        {
+            PyTools.Log = interp.Print;
+
+            var ns = new NativeNamespace("Python");
+            ns.Target = PyTools.Instance;
+            ns.Backing = typeof(PyTools);
             return ns;
         }
 

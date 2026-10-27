@@ -103,6 +103,11 @@ namespace DupoUninstall
         void Go()
         {
             if (running) return;
+
+            // Удалять файлы работающей программы бессмысленно — сначала закрываем.
+            if (!DupoSetup.Blockers.Clear(this, data.Dir, delegate (string s) { Say(s); }))
+                return;
+
             running = true;
 
             yes.Enabled = false;

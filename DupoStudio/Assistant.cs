@@ -650,8 +650,12 @@ namespace DupoStudio
                               "Compile", "Jar", "Run", "RunJar", "Build", "New" } },
             { "CSharp", new[] { "Build", "Forms", "Library", "Compile", "Run", "Launch",
                                 "IsInstalled", "Version", "Folder", "Install", "CscPath" } },
-            { "Cpp", new[] { "Install", "Uninstall", "Build", "Window", "Compile", "Run",
-                             "Launch", "IsInstalled", "Version", "Folder", "GppPath" } },
+            { "Cpp", new[] { "Install", "Uninstall", "Build", "Window", "Library", "Debug",
+                             "Compile", "Run", "Launch", "IsInstalled", "Version", "Folder",
+                             "GppPath" } },
+            { "Python", new[] { "Install", "Uninstall", "IsInstalled", "Portable", "Version",
+                                "Folder", "ExePath", "Run", "Code", "Check", "Pip", "Packages",
+                                "Build", "OwnExe" } },
             { "Services", new[] { "Service", "ServiceLevel", "Exists", "State", "List", "Levels",
                                   "LevelName", "IsAdmin", "Install", "Uninstall", "Start", "Stop",
                                   "Restart", "Installed", "Running", "NeedsAdmin", "Info", "Program" } },
@@ -799,11 +803,45 @@ if (Cpp.IsInstalled == false) { Cpp.Install() }
 
 string exe = Cpp.Build(""src"", ""build/App.exe"")      // консоль
 string win = Cpp.Window(""src"", ""build/App.exe"")     // окно, без консоли
+string dll = Cpp.Library(""src"", ""build/App.dll"")    // библиотека, -shared
+string dbg = Cpp.Debug(""src"", ""build/App.exe"")      // с отладкой, без -O2
 Cpp.Launch(exe, """")
 ```
 
 `Cpp.Install()` скачивает MinGW-w64 в `runtime\mingw`. Сборка идёт
-с `-std=c++17 -O2 -static`, поэтому получается один exe без лишних dll."));
+с `-std=c++17 -O2 -static`, поэтому получается один exe без лишних dll.
+`Cpp.Compile(src, out, flags)` — если нужны свои ключи компилятора."));
+
+            t.Add(new Topic("Python",
+                "python py pip pyinstaller скрипт пакет модуль интерпретатор",
+@"```
+using Dupo.Python
+
+if (Python.IsInstalled == false) { Python.Install() }
+
+print(Python.Version)                                 // 3.12.7
+print(Python.Portable)                                // свой или системный
+
+Python.Run(""src/main.py"")                             // запустить файл
+Python.Run(""src/main.py"", ""2 3 5"")                    // с аргументами
+Python.Code(""print(1 + 2)"")                           // одна строка кода
+Python.Check(""src/main.py"")                           // проверить синтаксис
+
+Python.Pip(""install requests"")                        // пакеты
+Python.Pip(""install -r requirements.txt"")
+print(Python.Packages)                                // что уже стоит
+
+string exe = Python.Build(""src/main.py"", ""build"")     // один .exe
+```
+
+`Python.Install()` качает переносимый Python с python.org в
+`runtime\python` — в систему ничего не прописывается и системный
+Python не затрагивается. Пакеты ставятся в свой `site-packages`,
+поэтому проекты не мешают друг другу. `Python.Build` использует
+PyInstaller (`--onefile`), он доставится сам при первом вызове.
+`pip` тоже доставится сам, если его нет в сборке.
+Если Python уже стоит в системе, он и будет использован —
+`Python.Portable` покажет, какой именно."));
 
             t.Add(new Topic("Java",
                 "java jar jdk javac компил класс",

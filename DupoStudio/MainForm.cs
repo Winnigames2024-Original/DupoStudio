@@ -96,6 +96,7 @@ namespace DupoStudio
             menu.Font = new Font("Segoe UI", 9f);
             menu.Renderer = new ToolStripProfessionalRenderer(new DarkColors());
             Theme.PaintMenu(menu.Items);
+            Theme.PaintBackground(this);
         }
 
         /// <summary>После смены темы подпись «недавние» строится заново.</summary>
@@ -106,6 +107,7 @@ namespace DupoStudio
             menu.BackColor = Theme.Chrome;
             menu.ForeColor = Theme.Text;
             welcome.BackColor = Theme.Back;
+            Theme.PaintBackground(this);
             RefreshRecent();
         }
 

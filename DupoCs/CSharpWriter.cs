@@ -51,6 +51,7 @@ namespace DupoCs
             new KeyValuePair<string, string>("Text", "TextTools"),
             new KeyValuePair<string, string>("CSharp", "CsTools.Instance"),
             new KeyValuePair<string, string>("Cpp", "CppTools.Instance"),
+            new KeyValuePair<string, string>("Python", "PyTools.Instance"),
             new KeyValuePair<string, string>("Services.ServiceLevel", "ServiceLevel"),
             new KeyValuePair<string, string>("Services.Service", "DupoService"),
             new KeyValuePair<string, string>("Services", "ServiceTools"),

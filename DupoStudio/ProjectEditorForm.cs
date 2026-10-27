@@ -37,6 +37,7 @@ namespace DupoStudio
             Load += delegate
             {
                 dock.Collapse();
+                Theme.PaintBackground(this);
                 RefreshView();
 
                 Banner();
@@ -720,6 +721,8 @@ namespace DupoStudio
             lblProject.BackColor = Theme.Accent;
             menuMain.BackColor = Theme.Chrome;
             toolMain.BackColor = Theme.Chrome;
+
+            Theme.PaintBackground(this);
 
             editors.Repaint();
             Invalidate(true);

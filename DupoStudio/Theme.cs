@@ -156,6 +156,9 @@ namespace DupoStudio
 
             Name = p.Name;
             Dark = p.Dark;
+            Custom = false;
+            Background = null;
+            BackgroundFit = "cover";
 
             Back = p.Back;
             Panel = p.Panel;
@@ -179,6 +182,70 @@ namespace DupoStudio
             Warn = p.Warn;
             Err = p.Err;
             Info = p.Info;
+        }
+
+        /// <summary>Картинка фона, если её задала своя тема.</summary>
+        public static Image Background { get; private set; }
+
+        /// <summary>Как растягивать картинку: cover, stretch, tile, center.</summary>
+        public static string BackgroundFit { get; private set; }
+
+        /// <summary>Тему собрали из файла на C# — в меню это отмечено.</summary>
+        public static bool Custom { get; private set; }
+
+        /// <summary>Своя тема применена: имя меняем, чтобы было видно.</summary>
+        public static void MarkCustom()
+        {
+            Custom = true;
+            Name = "Своя";
+            Background = ThemeScript.Background;
+            BackgroundFit = ThemeScript.BackgroundFit;
+            Dark = IsDark(Back);
+        }
+
+        /// <summary>Тёмный ли цвет — по нему решаем оттенки наведения.</summary>
+        public static bool IsDark(Color c)
+        {
+            return (c.R * 299 + c.G * 587 + c.B * 114) / 1000 < 128;
+        }
+
+        // Точки, через которые своя тема задаёт цвета.
+        public static void SetBack(Color c) { Back = c; }
+        public static void SetPanel(Color c) { Panel = c; }
+        public static void SetChrome(Color c) { Chrome = c; }
+        public static void SetBorder(Color c) { Border = c; }
+        public static void SetText(Color c) { Text = c; }
+        public static void SetDim(Color c) { Dim = c; }
+        public static void SetAccent(Color c) { Accent = c; }
+        public static void SetAccent2(Color c) { Accent2 = c; }
+        public static void SetGutter(Color c) { Gutter = c; }
+        public static void SetLineNumber(Color c) { LineNumber = c; }
+        public static void SetStatus(Color c) { Status = c; }
+        public static void SetKeyword(Color c) { Keyword = c; }
+        public static void SetTypeName(Color c) { TypeName = c; }
+        public static void SetStr(Color c) { Str = c; }
+        public static void SetNumber(Color c) { Number = c; }
+        public static void SetComment(Color c) { Comment = c; }
+        public static void SetOk(Color c) { Ok = c; }
+        public static void SetWarn(Color c) { Warn = c; }
+        public static void SetErr(Color c) { Err = c; }
+        public static void SetInfo(Color c) { Info = c; }
+
+        /// <summary>Разложить картинку фона по окну так, как просила тема.</summary>
+        public static void PaintBackground(Control root)
+        {
+            if (root == null) return;
+
+            root.BackgroundImage = Background;
+            if (Background == null) return;
+
+            switch ((BackgroundFit ?? "cover").ToLowerInvariant())
+            {
+                case "tile": root.BackgroundImageLayout = ImageLayout.Tile; break;
+                case "center": root.BackgroundImageLayout = ImageLayout.Center; break;
+                case "stretch": root.BackgroundImageLayout = ImageLayout.Stretch; break;
+                default: root.BackgroundImageLayout = ImageLayout.Zoom; break;
+            }
         }
 
         /// <summary>Оттенок для наведения — чуть светлее или темнее фона.</summary>

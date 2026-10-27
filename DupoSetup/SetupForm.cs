@@ -343,11 +343,28 @@ namespace DupoSetup
 
         void Go()
         {
+            string dir = pathBox.Text.Trim();
+
+            // Пока ничего не копировали — смотрим, не держит ли кто файлы,
+            // и предлагаем закрыть. Иначе упадём на середине установки.
+            if (!Blockers.Clear(this, dir, delegate (string s) { Step(s); }))
+            {
+                installing = false;
+                Back.Enabled = true;
+                AllowNext(true);
+                bar.Value = 0;
+                Step("Установка не начата.");
+
+                // Мы внутри OnEnter страницы — страницу меняем следующим сообщением.
+                try { BeginInvoke(new Action(delegate { Show("ready"); })); }
+                catch { }
+                return;
+            }
+
             installing = true;
             Back.Enabled = false;
             AllowNext(false);
 
-            string dir = pathBox.Text.Trim();
             bool wantDesktop = desktop.Checked;
             bool wantAssoc = assoc.Visible && assoc.Checked;
             bool wantTools = tools.Checked;

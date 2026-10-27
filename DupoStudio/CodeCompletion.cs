@@ -79,8 +79,12 @@ namespace DupoStudio
                 "Build", "Forms", "Library", "Compile", "Run", "Launch",
                 "IsInstalled", "Version", "Folder", "Install", "CscPath", "Sources" } },
             { "Cpp", new[] {
-                "Build", "Window", "Compile", "Run", "Launch", "Install", "Uninstall",
-                "IsInstalled", "Version", "Folder", "GppPath", "Sources" } },
+                "Build", "Window", "Library", "Debug", "Compile", "Run", "Launch",
+                "Install", "Uninstall", "IsInstalled", "Version", "Folder",
+                "GppPath", "Sources" } },
+            { "Python", new[] {
+                "Install", "Uninstall", "IsInstalled", "Portable", "Version", "Folder",
+                "Run", "Code", "Check", "Pip", "Packages", "Build", "ExePath" } },
             { "Services.ServiceLevel", new[] {
                 "SystemProcess", "LocalService", "NetworkService", "Delayed", "Manual",
                 "Interactive", "Disabled", "UserProcess", "Background", "Process" } },
@@ -93,7 +97,7 @@ namespace DupoStudio
             "print", "println", "str", "num", "int", "round", "abs", "type", "len",
             "wait", "now", "random", "list", "push", "upper", "lower", "split",
             "Web", "Files", "Java", "Tools", "App", "IO", "Sys", "Resources", "Services",
-            "CSharp", "Cpp", "Text", "Json", "Data", "Lang", "Forms", "def",
+            "CSharp", "Cpp", "Python", "Text", "Json", "Data", "Lang", "Forms", "def",
             "map", "keys", "values", "has"
         };
 

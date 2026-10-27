@@ -189,6 +189,18 @@ namespace DupoLang
             return Compile(src, outFile, "-mwindows");
         }
 
+        /// <summary>Собрать библиотеку .dll.</summary>
+        public string Library(string src, string outFile)
+        {
+            return Compile(src, outFile, "-shared");
+        }
+
+        /// <summary>Собрать с отладочными сведениями — без оптимизации.</summary>
+        public string Debug(string src, string outFile)
+        {
+            return Compile(src, outFile, "-g -O0");
+        }
+
         /// <summary>Собрать с дополнительными ключами компилятора.</summary>
         public string Compile(string src, string outFile, string flags)
         {

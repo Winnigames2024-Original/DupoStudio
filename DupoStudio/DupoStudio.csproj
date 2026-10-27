@@ -8,7 +8,7 @@
     <AssemblyName>DupoStudio</AssemblyName>
     <RootNamespace>DupoStudio</RootNamespace>
     <CodePage>65001</CodePage>
-    <Version>0.0.5</Version>
+    <Version>0.0.6</Version>
     <Product>Dupo Studio</Product>
     <Company>Winnigames2024</Company>
     <Authors>Winnigames2024</Authors>

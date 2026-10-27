@@ -8,7 +8,7 @@
     <AssemblyName>uninstall</AssemblyName>
     <RootNamespace>DupoUninstall</RootNamespace>
     <CodePage>65001</CodePage>
-    <Version>0.0.5</Version>
+    <Version>0.0.6</Version>
     <Product>Dupo Studio</Product>
     <Company>Winnigames2024</Company>
     <Authors>Winnigames2024</Authors>
@@ -23,6 +23,11 @@
     <Compile Include="..\DupoLang\**\*.cs"
              Exclude="..\DupoLang\bin\**\*.cs;..\DupoLang\obj\**\*.cs"
              LinkBase="DupoLang" />
+  </ItemGroup>
+
+  <!-- Поиск мешающих процессов общий с установщиком — чтобы не было двух копий. -->
+  <ItemGroup>
+    <Compile Include="..\DupoSetup\Blockers.cs" Link="Blockers.cs" />
   </ItemGroup>
 
   <ItemGroup>
