@@ -114,7 +114,7 @@
 
 <footer>
   <div class="wrap">
-    <div>Dupo Studio · Winnigames2024</div>
+    <div>Dupo Studio · Winnigames2024-Original</div>
     <div><a href="https://github.com/Winnigames2024-Original/DupoStudio">GitHub</a></div>
   </div>
 </footer>
@@ -141,6 +141,13 @@
     return String(s || "").replace(/[&<>"]/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
     });
+  }
+
+  function md(s) {
+    return s
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+      .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>');
   }
 
   function icon(name) {
@@ -171,8 +178,10 @@
           '<span class="meta">исходники</span></a>');
 
         var body = esc(rel.body || "").trim().split("\n")
-          .filter(function (s) { return s.trim(); })
-          .map(function (s) { return "<li>" + s.replace(/^[-*]\s*/, "") + "</li>"; })
+          .filter(function (s) { return s.trim() && !/^#{1,6}\s/.test(s.trim()) && !/^\|/.test(s.trim()); })
+          .map(function (s) {
+            return "<li>" + md(s.replace(/^[-*]\s*/, "")) + "</li>";
+          })
           .join("");
 
         return '<div class="rel' + (i === 0 ? ' latest' : '') + '">' +
