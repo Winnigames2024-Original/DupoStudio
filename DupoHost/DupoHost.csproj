@@ -24,6 +24,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Язык вкомпилирован сюда целиком, а в нём есть Dupo.Forms —
+         значит нужны те же сборки, что и окнам. -->
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
   </ItemGroup>
