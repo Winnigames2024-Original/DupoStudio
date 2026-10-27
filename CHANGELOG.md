@@ -3,7 +3,7 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
 нумерация по [SemVer](https://semver.org/lang/ru/).
 
-## [Не выпущено]
+## [0.0.3] — 2026-10-27
 
 ### Помощник
 - Панель **«Помощник»** (Ctrl+Alt+A) с отдельным чатом на каждый проект —
@@ -145,5 +145,6 @@
 - `DupoStudioSetup.exe` — установка для пользователя, без прав администратора:
   ярлыки, запись в список программ, связывание `.dupolang` и `.dapp`, удаление.
 
+[0.0.3]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v0.0.3
 [0.0.2]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v0.0.2
 [0.0.1]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v0.0.1

@@ -3,7 +3,7 @@ using Dupo.Text
 using Dupo.Data
 
 def Привет(имя) {
-    return "Привет, " + имя + "! Это DupoLang " + "0.0.2"
+    return "Привет, " + имя + "! Это DupoLang " + "0.0.3"
 }
 
 def Сумма(a, b) {
