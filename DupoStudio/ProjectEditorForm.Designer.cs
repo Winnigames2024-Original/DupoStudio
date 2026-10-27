@@ -16,12 +16,17 @@ namespace DupoStudio
         ToolStripMenuItem miToolsGet, miToolsFolder, miToolsRemove;
         ToolStripMenuItem miService, miSvcInstall, miSvcStart, miSvcStop, miSvcRemove, miSvcStatus, miSvcQueue;
         ToolStripMenuItem miProject, miProperties, miResources;
+        ToolStripMenuItem miView, miViewExplorer, miViewProps, miViewToolbox, miViewConsole, miViewDockAll;
+        ToolStripMenuItem miNewForm, miOpenForm, miFormCode;
         ToolStripMenuItem miHelp, miAbout;
 
         ToolStrip toolMain;
         ToolStripButton tbNew, tbOpen, tbSave, tbRun, tbStop, tbPhp, tbBrowser, tbExport;
 
-        SplitContainer splitMain, splitRight;
+        DockHost dock;
+        PropertiesPanel properties;
+        ToolboxPanel toolbox;
+        FormDesignerPanel designer;
         StatusStrip statusMain;
         ToolStripStatusLabel lblStatus, lblCaret, lblProject, lblPhp, lblJava;
 
@@ -89,6 +94,24 @@ namespace DupoStudio
             miProperties = new ToolStripMenuItem("Свойства проекта...");
             miResources = new ToolStripMenuItem("Папка ресурсов");
 
+            miNewForm = new ToolStripMenuItem("Новая форма...");
+            miOpenForm = new ToolStripMenuItem("Открыть форму...");
+            miFormCode = new ToolStripMenuItem("Сгенерировать код формы");
+
+            miView = new ToolStripMenuItem("Вид");
+            miViewExplorer = new ToolStripMenuItem("Обозреватель решений");
+            miViewProps = new ToolStripMenuItem("Окно свойств");
+            miViewToolbox = new ToolStripMenuItem("Панель элементов");
+            miViewConsole = new ToolStripMenuItem("Вывод");
+            miViewDockAll = new ToolStripMenuItem("Вернуть все окна на место");
+            miViewExplorer.CheckOnClick = true;
+            miViewProps.CheckOnClick = true;
+            miViewToolbox.CheckOnClick = true;
+            miViewConsole.CheckOnClick = true;
+            miView.DropDownItems.AddRange(new ToolStripItem[] {
+                miViewExplorer, miViewProps, miViewToolbox, miViewConsole,
+                new ToolStripSeparator(), miViewDockAll });
+
             miHelp = new ToolStripMenuItem("Справка");
             miAbout = new ToolStripMenuItem("О программе");
 
@@ -102,8 +125,10 @@ namespace DupoStudio
             tbBrowser = new ToolStripButton("Браузер");
             tbExport = new ToolStripButton("Экспорт .dapp");
 
-            splitMain = new SplitContainer();
-            splitRight = new SplitContainer();
+            dock = new DockHost();
+            properties = new PropertiesPanel();
+            toolbox = new ToolboxPanel();
+            designer = new FormDesignerPanel();
 
             explorer = new ExplorerForm();
             editors = new CodeEditorForm();
@@ -116,12 +141,6 @@ namespace DupoStudio
             lblJava = new ToolStripStatusLabel("JDK не установлен");
             lblCaret = new ToolStripStatusLabel("1 : 1");
 
-            ((System.ComponentModel.ISupportInitialize)splitMain).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)splitRight).BeginInit();
-            splitMain.Panel1.SuspendLayout();
-            splitMain.Panel2.SuspendLayout();
-            splitRight.Panel1.SuspendLayout();
-            splitRight.Panel2.SuspendLayout();
             SuspendLayout();
 
             // --- меню ---
@@ -141,7 +160,9 @@ namespace DupoStudio
                 miService, new ToolStripSeparator(),
                 miBrowser, miFolder });
 
-            miProject.DropDownItems.AddRange(new ToolStripItem[] { miProperties, miResources });
+            miProject.DropDownItems.AddRange(new ToolStripItem[] {
+                miProperties, miResources, new ToolStripSeparator(),
+                miNewForm, miOpenForm, miFormCode });
             miHelp.DropDownItems.Add(miAbout);
 
             miNewProject.ShortcutKeys = Keys.Control | Keys.N;
@@ -158,7 +179,7 @@ namespace DupoStudio
 
             miAutostart.CheckOnClick = true;
 
-            menuMain.Items.AddRange(new ToolStripItem[] { miFile, miProject, miRun, miTools, miHelp });
+            menuMain.Items.AddRange(new ToolStripItem[] { miFile, miProject, miView, miRun, miTools, miHelp });
             menuMain.BackColor = Theme.Chrome;
             menuMain.ForeColor = Theme.Text;
             menuMain.Padding = new Padding(6, 2, 0, 2);
@@ -189,19 +210,18 @@ namespace DupoStudio
             tbExport.ForeColor = Theme.Accent2;
 
             // --- встроенные окна ---
-            splitRight.Dock = DockStyle.Fill;
-            splitRight.Orientation = Orientation.Horizontal;
-            splitRight.BackColor = Theme.Chrome;
-            splitRight.SplitterWidth = 5;
-            splitRight.Panel1.Controls.Add(editors);
-            splitRight.Panel2.Controls.Add(console);
+            dock.Dock = DockStyle.Fill;
 
-            splitMain.Dock = DockStyle.Fill;
-            splitMain.Orientation = Orientation.Vertical;
-            splitMain.BackColor = Theme.Chrome;
-            splitMain.SplitterWidth = 5;
-            splitMain.Panel1.Controls.Add(explorer);
-            splitMain.Panel2.Controls.Add(splitRight);
+            editors.Dock = DockStyle.Fill;
+            designer.Dock = DockStyle.Fill;
+            designer.Visible = false;
+            dock.Center.Controls.Add(designer);
+            dock.Center.Controls.Add(editors);
+
+            dock.Add("Обозреватель решений", explorer, DockZone.Left);
+            dock.Add("Свойства", properties, DockZone.Right);
+            dock.Add("Панель элементов", toolbox, DockZone.Right);
+            dock.Add("Вывод", console, DockZone.Bottom);
 
             explorer.Show();
             editors.Show();
@@ -238,20 +258,12 @@ namespace DupoStudio
             Text = "Dupo Studio";
             StartPosition = FormStartPosition.CenterScreen;
 
-            Controls.Add(splitMain);
+            Controls.Add(dock);
             Controls.Add(statusMain);
             Controls.Add(toolMain);
             Controls.Add(menuMain);
             MainMenuStrip = menuMain;
 
-            splitMain.Panel1.ResumeLayout(false);
-            splitMain.Panel2.ResumeLayout(false);
-            splitRight.Panel1.ResumeLayout(false);
-            splitRight.Panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)splitMain).EndInit();
-            ((System.ComponentModel.ISupportInitialize)splitRight).EndInit();
-            splitMain.ResumeLayout(false);
-            splitRight.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }

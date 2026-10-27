@@ -80,6 +80,24 @@ namespace DupoStudio
             miSvcStop.Click += delegate { ServiceAction("stop"); };
             miSvcStatus.Click += delegate { ServiceStatus(); };
             miSvcQueue.Click += delegate { QueueBuild(); };
+
+            miViewExplorer.Click += delegate { TogglePane("Обозреватель решений"); };
+            miViewProps.Click += delegate { TogglePane("Свойства"); };
+            miViewToolbox.Click += delegate { TogglePane("Панель элементов"); };
+            miViewConsole.Click += delegate { TogglePane("Вывод"); };
+            miViewDockAll.Click += delegate { dock.DockAll(); RefreshView(); };
+
+            miNewForm.Click += delegate { NewForm(); };
+            miOpenForm.Click += delegate { OpenFormFile(); };
+            miFormCode.Click += delegate { FormToCode(); };
+
+            dock.Changed += delegate { RefreshView(); };
+
+            toolbox.SelectionChanged += delegate { };
+            designer.PickKind = delegate { return toolbox.Selected; };
+            designer.Placed += delegate { toolbox.Reset(); ShowDesignerProps(); };
+            designer.SelectionChanged += delegate { ShowDesignerProps(); };
+            properties.Changed += delegate { PropertiesEdited(); };
             miBrowser.Click += delegate { OpenBrowser(); };
             miFolder.Click += delegate { if (projectDir != null) Process.Start(projectDir); };
             miProperties.Click += delegate { ShowProperties(); };
@@ -218,6 +236,8 @@ namespace DupoStudio
             RefreshTree();
             miAutostart.Checked = IsAutostart;
             Status(dir);
+            ShowDesigner(false);
+            ShowProjectProps();
 
             string main = Path.Combine(dir, "main.dupolang");
             if (File.Exists(main)) OpenFile(main);
@@ -228,14 +248,25 @@ namespace DupoStudio
             explorer.LoadProject(projectDir);
         }
 
+        /// <summary>Перечитать дерево после правок на диске.</summary>
+        void ReloadTree() { RefreshTree(); }
+
         // ---------------- файлы ----------------
 
         CodeEditor ActiveEditor { get { return editors.Active; } }
 
         void OpenFile(string path)
         {
+            // Формы открываются в дизайнере, остальное — в редакторе.
+            if (path != null && path.EndsWith(FormDesignerPanel.Extension, StringComparison.OrdinalIgnoreCase))
+            {
+                OpenForm(path);
+                return;
+            }
+
             try
             {
+                if (designer.Visible) ShowDesigner(false);
                 editors.Open(path);
                 Status(path);
             }
@@ -435,6 +466,171 @@ namespace DupoStudio
             });
             t.IsBackground = true;
             t.Start();
+        }
+
+        // ------------------------------------------------------------------
+        // панели: показать, спрятать, вернуть из окна
+        // ------------------------------------------------------------------
+
+        /// <summary>Delete убирает выделенный элемент, пока открыт дизайнер.</summary>
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == Keys.Delete && designer != null && designer.Visible && designer.Selected != null)
+            {
+                designer.RemoveSelected();
+                ShowDesignerProps();
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        void TogglePane(string title)
+        {
+            var pane = dock.Find(title);
+            if (pane == null) return;
+
+            if (dock.IsShown(pane)) dock.HidePane(pane);
+            else dock.Show(pane);
+
+            RefreshView();
+        }
+
+        void RefreshView()
+        {
+            miViewExplorer.Checked = dock.IsShown(dock.Find("Обозреватель решений"));
+            miViewProps.Checked = dock.IsShown(dock.Find("Свойства"));
+            miViewToolbox.Checked = dock.IsShown(dock.Find("Панель элементов"));
+            miViewConsole.Checked = dock.IsShown(dock.Find("Вывод"));
+        }
+
+        /// <summary>Окно свойств показывает проект, когда дизайнер закрыт.</summary>
+        void ShowProjectProps()
+        {
+            properties.Bind(new ProjectProxy(project),
+                            "Проект: " + (project.Name.Length > 0 ? project.Name : "без имени"));
+        }
+
+        void ShowDesignerProps()
+        {
+            if (!designer.Visible) { ShowProjectProps(); return; }
+
+            var sel = designer.Selected;
+            properties.Bind(designer.PropertyTarget,
+                            sel == null
+                                ? "Форма: " + designer.FormName
+                                : sel.Name + " — " + ToolboxPanel.NameOf(sel.Kind));
+        }
+
+        /// <summary>В окне свойств что-то поправили.</summary>
+        void PropertiesEdited()
+        {
+            if (designer.Visible) { designer.Touch(); ShowDesignerProps(); return; }
+
+            try { project.Save(); }
+            catch (Exception ex) { Log("Свойства не сохранились: " + ex.Message, Theme.Err); }
+            RefreshTitle();
+        }
+
+        void RefreshTitle()
+        {
+            string label = project.Name.Length > 0 ? project.Name : Path.GetFileName(projectDir ?? "");
+            lblProject.Text = string.IsNullOrEmpty(label) ? "нет проекта" : label;
+        }
+
+        // ------------------------------------------------------------------
+        // дизайнер форм
+        // ------------------------------------------------------------------
+
+        void ShowDesigner(bool on)
+        {
+            designer.Visible = on;
+            editors.Visible = !on;
+            if (on) designer.BringToFront(); else editors.BringToFront();
+
+            var toolboxPane = dock.Find("Панель элементов");
+            if (on && !dock.IsShown(toolboxPane)) dock.Show(toolboxPane);
+
+            var propsPane = dock.Find("Свойства");
+            if (on && !dock.IsShown(propsPane)) dock.Show(propsPane);
+
+            ShowDesignerProps();
+            RefreshView();
+        }
+
+        void NewForm()
+        {
+            if (projectDir == null) { Log("Сначала откройте проект.", Theme.Dim); return; }
+
+            string name = PromptDialog.Show(this, "Новая форма", "Имя формы:", "Form1");
+            if (string.IsNullOrEmpty(name)) return;
+
+            string file = Path.Combine(projectDir, ProjectTemplates.Ident(name) + FormDesignerPanel.Extension);
+            if (File.Exists(file))
+            {
+                Log("Такая форма уже есть: " + Path.GetFileName(file), Theme.Dim);
+                return;
+            }
+
+            designer.Reset(file, name);
+            try
+            {
+                designer.Save(file);
+                Log("Форма создана: " + Path.GetFileName(file), Theme.Ok);
+            }
+            catch (Exception ex) { Log("Форма не сохранилась: " + ex.Message, Theme.Err); }
+
+            ShowDesigner(true);
+            ReloadTree();
+        }
+
+        void OpenFormFile()
+        {
+            using (var dlg = new OpenFileDialog())
+            {
+                dlg.Filter = "Формы Dupo (*" + FormDesignerPanel.Extension + ")|*" +
+                             FormDesignerPanel.Extension + "|Все файлы (*.*)|*.*";
+                if (Directory.Exists(projectDir)) dlg.InitialDirectory = projectDir;
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                OpenForm(dlg.FileName);
+            }
+        }
+
+        /// <summary>Открыть .dupoform в дизайнере.</summary>
+        public void OpenForm(string path)
+        {
+            try
+            {
+                designer.Load(path);
+                ShowDesigner(true);
+                Log("Форма открыта: " + Path.GetFileName(path), Theme.Info);
+            }
+            catch (Exception ex) { Log("Форма не открылась: " + ex.Message, Theme.Err); }
+        }
+
+        void FormToCode()
+        {
+            if (!designer.Visible) { Log("Сначала откройте форму в дизайнере.", Theme.Dim); return; }
+
+            try
+            {
+                designer.Save(null);
+
+                string ns = project.Namespace.Length > 0
+                    ? project.Namespace
+                    : ProjectTemplates.Ident(project.Name);
+
+                string dir = Path.Combine(projectDir, "src");
+                Directory.CreateDirectory(dir);
+
+                string file = Path.Combine(dir, designer.FormName + ".cs");
+                File.WriteAllText(file, designer.ToCSharp(ns), new UTF8Encoding(false));
+
+                Log("Код формы: " + file, Theme.Ok);
+                ShowDesigner(false);
+                OpenFile(file);
+                ReloadTree();
+            }
+            catch (Exception ex) { Log("Код не сгенерировался: " + ex.Message, Theme.Err); }
         }
 
         // ------------------------------------------------------------------
