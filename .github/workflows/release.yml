@@ -59,19 +59,18 @@ jobs:
           if (-not (Test-Path $setup)) { throw "Нет $setup" }
 
           # DupoSetup — оконное приложение, поэтому ждём завершения явно.
-          $args = @(
-            "/pack", "payload", "$PWD\DupoStudioSetup.exe",
-            "name=Dupo Studio",
-            "version=$version",
-            "publisher=Winnigames2024",
-            "folder=DupoStudio",
-            "exe=DupoStudio.exe",
-            "shortcut=Dupo Studio",
-            "desktop=1",
-            "assoc=.dupolang,.dapp"
-          )
-          $p = Start-Process -FilePath $setup -ArgumentList $args -NoNewWindow -Wait -PassThru
-          if ($p.ExitCode -ne 0) { throw "Сборка установщика вернула $($p.ExitCode)" }
+          # Аргументы передаём одной строкой с кавычками: в значениях есть пробелы,
+          # а массив PowerShell экранирует их ненадёжно. Имя $args занято самим
+          # PowerShell, поэтому переменная называется иначе.
+          $out = Join-Path $PWD "DupoStudioSetup.exe"
+          $packArgs = '/pack "payload" "{0}" "name=Dupo Studio" "version={1}" ' +
+                      '"publisher=Winnigames2024" "folder=DupoStudio" "exe=DupoStudio.exe" ' +
+                      '"shortcut=Dupo Studio" "desktop=1" "assoc=.dupolang,.dapp"'
+          $packArgs = $packArgs -f $out, $version
+          Write-Host "DupoSetup $packArgs"
+
+          $proc = Start-Process -FilePath $setup -ArgumentList $packArgs -NoNewWindow -Wait -PassThru
+          if ($proc.ExitCode -ne 0) { throw "Сборка установщика вернула $($proc.ExitCode)" }
 
           if (-not (Test-Path "DupoStudioSetup.exe")) { throw "Установщик не собрался" }
           $kb = [math]::Round((Get-Item "DupoStudioSetup.exe").Length / 1KB)
