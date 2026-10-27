@@ -638,7 +638,8 @@ namespace DupoStudio
             new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
         {
             { "Web", new[] { "Server", "Server.Php", "Open", "Get", "Download",
-                             "Start", "Stop", "Url", "Port", "Root", "Running", "SetIndex" } },
+                             "Start", "Stop", "Url", "Port", "Root", "Running", "SetIndex",
+                             "Fallback", "ErrorPage" } },
             { "Files", new[] { "Create", "Write", "Append", "AppendLine", "Read", "ReadLines",
                                "ReplaceIn", "Contains", "Exists", "Delete", "Copy", "Move", "Rename",
                                "Size", "Modified", "Name", "NameOnly", "Extension", "Folder", "Full",
@@ -876,6 +877,32 @@ Web.Open(site.Url)
 указана папка, сервер отдаёт первый найденный `index.html`, `index.php`
 или `index.js` — как nginx, а не ошибку 404. PHP работает через
 `php-cgi.exe` по CGI."));
+
+            t.Add(new Topic("Своя страница 404",
+                "404 ошибка не найдено errorpage error page страница ошибки fallback",
+@"Положите **`404.html`** в папку сайта — сервер отдаст его вместо
+встроенной страницы, причём с кодом 404, а не 200. Годится и `404.php`,
+и остальные расширения из списка индексов.
+
+Файл можно назвать иначе:
+
+```
+using Dupo.Web
+
+Web.Server site = new Web.Server(8080, ""www"", ""index"")
+site.ErrorPage = ""errors/missing.html""     // путь от папки сайта
+site.Start()
+```
+
+А для приложения на JavaScript, где маршруты разбирает сам фронтенд,
+404 вообще не нужен — пусть любой адрес отдаёт главную страницу:
+
+```
+site.Fallback = true
+```
+
+Своей страницы нет и `Fallback` не включён — показывается встроенная
+страница ошибки с кодом и пояснением."));
 
             t.Add(new Topic("Службы и сервисы",
                 "сервис служб service servicelevel фонов автозапуск sc агент",

@@ -32,6 +32,13 @@ namespace DupoLang
         /// <summary>Отдавать корневой index вместо 404 — для приложений на JavaScript.</summary>
         public bool Fallback;
 
+        /// <summary>
+        /// Своя страница для ненайденного пути — как error_page в nginx.
+        /// Пусто: ищем 404.html (или 404.php и остальные расширения) в корне
+        /// сайта, и только если его нет, показываем встроенную страницу.
+        /// </summary>
+        public string ErrorPage = "";
+
         public bool Running { get; private set; }
         public string Url
         {
@@ -268,8 +275,7 @@ namespace DupoLang
 
             if (file == null)
             {
-                SendError(ctx, 404, "Не найдено: " + urlPath +
-                    "\nВ папке нет ни одного из файлов: " + IndexFiles);
+                SendMissing(ctx, urlPath);
                 return;
             }
 
@@ -338,23 +344,141 @@ namespace DupoLang
 
         void SendFile(HttpListenerContext ctx, string file, string ext)
         {
+            SendFile(ctx, file, ext, 200);
+        }
+
+        void SendFile(HttpListenerContext ctx, string file, string ext, int code)
+        {
             string type;
             if (!Mime.TryGetValue(ext, out type)) type = "application/octet-stream";
 
             byte[] data = File.ReadAllBytes(file);
-            ctx.Response.StatusCode = 200;
+            ctx.Response.StatusCode = code;
             ctx.Response.ContentType = type;
             ctx.Response.ContentLength64 = data.Length;
             ctx.Response.OutputStream.Write(data, 0, data.Length);
         }
 
+        /// <summary>Встроенная страница ошибки — её видно, пока своей нет.</summary>
+        static string ErrorHtml(int code, string message)
+        {
+            string title = Title(code);
+            var sb = new StringBuilder();
+
+            sb.Append("<!DOCTYPE html><html lang=\"ru\"><head><meta charset=\"utf-8\">");
+            sb.Append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">");
+            sb.Append("<title>").Append(code).Append(" — ").Append(title).Append("</title><style>");
+            sb.Append("*{box-sizing:border-box}");
+            sb.Append("body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;");
+            sb.Append("padding:24px;font:15px/1.6 'Segoe UI',system-ui,sans-serif;color:#e6eaf2;");
+            sb.Append("background:#0f1218;background-image:radial-gradient(900px 600px at 15% -10%,");
+            sb.Append("rgba(59,130,246,.18),transparent 70%)}");
+            sb.Append(".box{width:100%;max-width:560px;background:#161a23;border:1px solid #262c3a;");
+            sb.Append("border-radius:14px;padding:38px 36px}");
+            sb.Append(".num{font:600 76px/1 'Segoe UI',sans-serif;letter-spacing:-2px;margin:0;");
+            sb.Append("background:linear-gradient(135deg,#3b82f6,#22c7a9);-webkit-background-clip:text;");
+            sb.Append("background-clip:text;color:transparent}");
+            sb.Append("h1{font:600 20px/1.3 'Segoe UI',sans-serif;margin:12px 0 0}");
+            sb.Append("p{color:#8d97aa;margin:14px 0 0;white-space:pre-wrap}");
+            sb.Append("a{display:inline-block;margin-top:26px;padding:10px 18px;border-radius:8px;");
+            sb.Append("background:#3b82f6;color:#fff;text-decoration:none;font-weight:600}");
+            sb.Append("a:hover{background:#2f6fd8}");
+            sb.Append(".foot{margin-top:28px;padding-top:18px;border-top:1px solid #262c3a;");
+            sb.Append("color:#5a6478;font-size:12.5px}");
+            sb.Append(".foot code{color:#8d97aa}");
+            sb.Append("</style></head><body><div class=\"box\">");
+
+            sb.Append("<p class=\"num\">").Append(code).Append("</p>");
+            sb.Append("<h1>").Append(title).Append("</h1>");
+            sb.Append("<p>").Append(WebUtility.HtmlEncode(message ?? "")).Append("</p>");
+            sb.Append("<a href=\"/\">На главную</a>");
+
+            sb.Append("<div class=\"foot\">");
+            if (code == 404)
+                sb.Append("Чтобы заменить эту страницу своей, положите <code>404.html</code> ")
+                  .Append("в папку сайта — сервер отдаст её сам.<br>");
+            sb.Append("DupoLang Web.Server</div>");
+
+            sb.Append("</div></body></html>");
+            return sb.ToString();
+        }
+
+        /// <summary>Человеческое название кода ошибки.</summary>
+        static string Title(int code)
+        {
+            switch (code)
+            {
+                case 400: return "Запрос не разобрался";
+                case 403: return "Доступа нет";
+                case 404: return "Страница не найдена";
+                case 405: return "Такой способ запроса не поддерживается";
+                case 500: return "Сервер не справился";
+                case 501: return "Так сервер не умеет";
+                case 503: return "Сервер занят";
+                default: return code >= 500 ? "Ошибка сервера" : "Запрос не выполнен";
+            }
+        }
+
+        /// <summary>
+        /// Ничего не нашлось. Если у сайта есть своя страница 404 — отдаём её
+        /// (с правильным кодом 404, а не 200), иначе встроенную.
+        /// </summary>
+        void SendMissing(HttpListenerContext ctx, string urlPath)
+        {
+            string page = NotFoundPage();
+
+            if (page != null)
+            {
+                string ext = Path.GetExtension(page).ToLowerInvariant();
+
+                // Код именно 404: страница своя, но поисковики и клиенты
+                // должны понимать, что ничего не нашлось.
+                if (ext == ".php")
+                {
+                    ctx.Response.StatusCode = 404;
+                    ServePhp(ctx, page);
+                }
+                else SendFile(ctx, page, ext, 404);
+
+                return;
+            }
+
+            SendError(ctx, 404, "Не найдено: " + urlPath +
+                "\nВ папке нет ни одного из файлов: " + IndexFiles);
+        }
+
+        /// <summary>Своя страница 404, если она есть: из ErrorPage или 404.* в корне.</summary>
+        string NotFoundPage()
+        {
+            try
+            {
+                string rootFull = Path.GetFullPath(Root);
+
+                // Путь задали руками — он может быть и относительным от корня.
+                if (!string.IsNullOrEmpty(ErrorPage))
+                {
+                    string own = Path.IsPathRooted(ErrorPage)
+                        ? ErrorPage
+                        : Path.Combine(rootFull, ErrorPage.TrimStart('/', '\\'));
+
+                    return File.Exists(own) ? own : null;
+                }
+
+                // Иначе ищем 404.html, 404.php и так далее — как index.
+                foreach (string ext in IndexExtensions)
+                {
+                    string candidate = Path.Combine(rootFull, "404" + ext);
+                    if (File.Exists(candidate)) return candidate;
+                }
+            }
+            catch { }
+
+            return null;
+        }
+
         void SendError(HttpListenerContext ctx, int code, string message)
         {
-            string html = "<!DOCTYPE html><html lang=\"ru\"><head><meta charset=\"utf-8\">" +
-                          "<title>" + code + "</title></head><body style=\"font-family:Segoe UI,sans-serif;" +
-                          "background:#141821;color:#e6e9ef;padding:48px\"><h1 style=\"font-size:56px;margin:0\">" +
-                          code + "</h1><p style=\"color:#9aa4b8\">" + WebUtility.HtmlEncode(message) +
-                          "</p><p style=\"color:#4a5569\">DupoLang Web.Server</p></body></html>";
+            string html = ErrorHtml(code, message);
             byte[] data = Encoding.UTF8.GetBytes(html);
             ctx.Response.StatusCode = code;
             ctx.Response.ContentType = "text/html; charset=utf-8";

@@ -12,6 +12,9 @@ namespace DupoStudio
         /// <summary>Кавычка внутри генерируемого кода.</summary>
         const string Q = "\"";
 
+        /// <summary>Перевод строки в файлах проекта — как привычно в Windows.</summary>
+        const string NL = "\r\n";
+
         static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
 
         public static string ProjectsDir
@@ -131,10 +134,53 @@ namespace DupoStudio
             Save(dir, "main.dupolang", code.ToString());
 
             Save(dir, Path.Combine("www", "index.html"),
-                "<!DOCTYPE html>\r\n<html lang=\"ru\">\r\n<head>\r\n<meta charset=\"utf-8\">\r\n" +
-                "<title>" + name + "</title>\r\n</head>\r\n<body style=\"font-family:Segoe UI,sans-serif;" +
-                "background:#141821;color:#e6e9ef;padding:48px\">\r\n<h1>" + name + "</h1>\r\n" +
-                "<p>Страница раздаётся сервером DupoLang.</p>\r\n</body>\r\n</html>");
+                Page(name, "<h1>" + name + "</h1>" + NL +
+                           "<p>Страница раздаётся сервером DupoLang.</p>"));
+
+            // Своя страница ошибки: сервер отдаёт её вместо встроенной,
+            // с кодом 404. Правится как обычная страница.
+            Save(dir, Path.Combine("www", "404.html"),
+                Page("404 — страница не найдена",
+                     "<p class=\"code\">404</p>" + NL +
+                     "<h1>Такой страницы здесь нет</h1>" + NL +
+                     "<p>Ссылка устарела или в адресе опечатка. Сам сайт работает.</p>" + NL +
+                     "<p><a class=\"home\" href=\"/\">На главную</a></p>"));
+        }
+
+        /// <summary>Заготовка страницы для веб-проекта — общая разметка и стили.</summary>
+        static string Page(string title, string body)
+        {
+            var sb = new StringBuilder();
+            sb.Append("<!DOCTYPE html>").Append(NL);
+            sb.Append("<html lang=\"ru\">").Append(NL);
+            sb.Append("<head>").Append(NL);
+            sb.Append("<meta charset=\"utf-8\">").Append(NL);
+            sb.Append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">").Append(NL);
+            sb.Append("<title>").Append(title).Append("</title>").Append(NL);
+            sb.Append("<style>").Append(NL);
+            sb.Append("  body { margin: 0; min-height: 100vh; display: flex; align-items: center;").Append(NL);
+            sb.Append("         justify-content: center; padding: 24px; text-align: center;").Append(NL);
+            sb.Append("         font: 15px/1.6 'Segoe UI', system-ui, sans-serif;").Append(NL);
+            sb.Append("         color: #e6eaf2; background: #0f1218; background-image:").Append(NL);
+            sb.Append("         radial-gradient(900px 600px at 15% -10%, rgba(59,130,246,.18), transparent 70%); }").Append(NL);
+            sb.Append("  .box { max-width: 520px; background: #161a23; border: 1px solid #262c3a;").Append(NL);
+            sb.Append("         border-radius: 14px; padding: 38px 36px; }").Append(NL);
+            sb.Append("  h1 { font-size: 22px; margin: 0; }").Append(NL);
+            sb.Append("  p { color: #8d97aa; }").Append(NL);
+            sb.Append("  .code { font: 600 76px/1 'Segoe UI', sans-serif; letter-spacing: -2px; margin: 0;").Append(NL);
+            sb.Append("          background: linear-gradient(135deg, #3b82f6, #22c7a9);").Append(NL);
+            sb.Append("          -webkit-background-clip: text; background-clip: text; color: transparent; }").Append(NL);
+            sb.Append("  .home { display: inline-block; padding: 10px 18px; border-radius: 8px;").Append(NL);
+            sb.Append("          background: #3b82f6; color: #fff; text-decoration: none; font-weight: 600; }").Append(NL);
+            sb.Append("</style>").Append(NL);
+            sb.Append("</head>").Append(NL);
+            sb.Append("<body>").Append(NL);
+            sb.Append("<div class=\"box\">").Append(NL);
+            sb.Append(body).Append(NL);
+            sb.Append("</div>").Append(NL);
+            sb.Append("</body>").Append(NL);
+            sb.Append("</html>").Append(NL);
+            return sb.ToString();
         }
 
         static void ConsoleApp(string dir, string name)

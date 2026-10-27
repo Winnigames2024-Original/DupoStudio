@@ -243,7 +243,8 @@ namespace DupoStudio
             // Web.Server и подобные цепочки
             if (owner.EndsWith("Server", StringComparison.OrdinalIgnoreCase))
                 return new List<string> { "Start", "Stop", "Url", "Port", "Root", "Running",
-                                          "SetIndex", "IndexName", "IndexFiles", "Fallback", "Php" };
+                                          "SetIndex", "IndexName", "IndexFiles", "Fallback",
+                                          "ErrorPage", "HostName", "Php" };
 
             if (owner.EndsWith("Php", StringComparison.OrdinalIgnoreCase))
                 return new List<string> { "Install", "Uninstall", "IsInstalled", "Version", "Folder" };

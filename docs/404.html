@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>404 — страница не найдена · Dupo Studio</title>
+<meta name="description" content="Такой страницы на сайте Dupo Studio нет. Ниже — куда можно пойти вместо неё.">
+<meta name="robots" content="noindex">
+<!-- Пути здесь абсолютные: эту страницу показывают и для /release/что-то/,
+     откуда относительные ссылки на assets уже не нашлись бы. -->
+<link rel="icon" href="/DupoStudio/assets/logo.svg">
+<link rel="stylesheet" href="/DupoStudio/assets/style.css">
+<style>
+  .lost { padding: 96px 0 72px; }
+  .lost .wrap { max-width: 760px; }
+
+  .code {
+    font: 700 132px/1 'Segoe UI', system-ui, sans-serif;
+    letter-spacing: -6px; margin: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .lost h1 { font-size: 30px; margin: 10px 0 0; }
+  .lost .lead { margin-top: 14px; }
+
+  .asked {
+    margin-top: 22px; padding: 12px 16px;
+    border: 1px solid var(--line); background: var(--bg-soft);
+    border-radius: 10px; color: var(--dim);
+    font: 13.5px/1.5 ui-monospace, Consolas, monospace;
+    word-break: break-all;
+  }
+  .asked b { color: var(--text); font-weight: 600; }
+
+  .where { list-style: none; padding: 0; margin: 32px 0 0; display: grid; gap: 10px; }
+  .where a {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 18px; text-decoration: none; color: inherit;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; transition: border-color .15s, transform .15s;
+  }
+  .where a:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .where .ico { font-size: 22px; line-height: 1; }
+  .where .what { font-weight: 600; }
+  .where .note { color: var(--dim); font-size: 13.5px; margin-top: 3px; }
+
+  .hint {
+    margin-top: 34px; padding: 16px 18px;
+    border-left: 3px solid var(--accent); background: var(--bg-soft);
+    border-radius: 0 10px 10px 0; color: var(--dim); font-size: 14px;
+  }
+  .hint code { color: var(--text); }
+
+  @media (max-width: 560px) {
+    .code { font-size: 92px; letter-spacing: -4px; }
+    .lost { padding: 64px 0 48px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/DupoStudio/" style="text-decoration:none;color:inherit">
+      <img src="/DupoStudio/assets/logo.svg" alt=""> Dupo Studio
+    </a>
+    <nav>
+      <a href="/DupoStudio/#features">Возможности</a>
+      <a href="/DupoStudio/#lang">Язык</a>
+      <a href="/DupoStudio/release/">Версии</a>
+      <a href="/DupoStudio/releases/">Релизы</a>
+      <a href="https://github.com/Winnigames2024-Original/DupoStudio">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section class="lost">
+  <div class="wrap">
+    <p class="code">404</p>
+    <h1>Такой страницы здесь нет</h1>
+    <p class="lead">
+      Ссылка устарела, в адресе опечатка или страницу переименовали.
+      Сам сайт на месте — ниже всё, что на нём есть.
+    </p>
+
+    <div class="asked" id="asked"></div>
+
+    <ul class="where">
+      <li>
+        <a href="/DupoStudio/">
+          <span class="ico">🏠</span>
+          <span>
+            <span class="what">Главная</span>
+            <span class="note">что такое Dupo Studio, язык и формат .dapp</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a href="/DupoStudio/releases/">
+          <span class="ico">↓</span>
+          <span>
+            <span class="what">Скачать</span>
+            <span class="note">установщик, студия одним файлом, BuildTools</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a href="/DupoStudio/release/">
+          <span class="ico">📚</span>
+          <span>
+            <span class="what">Все версии</span>
+            <span class="note">страница каждого выпуска с файлами и исходниками</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a href="/DupoStudio/#lang">
+          <span class="ico">📖</span>
+          <span>
+            <span class="what">Стандартная библиотека</span>
+            <span class="note">модули DupoLang и их команды</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a href="https://github.com/Winnigames2024-Original/DupoStudio/issues">
+          <span class="ico">💬</span>
+          <span>
+            <span class="what">Сообщить о проблеме</span>
+            <span class="note">если сюда привела ссылка с сайта — напишите, поправлю</span>
+          </span>
+        </a>
+      </li>
+    </ul>
+
+    <p class="hint">
+      Искали страницу версии? Адрес выглядит так:
+      <code>/DupoStudio/release/0.0.6/</code> — и всегда работает
+      <code>/DupoStudio/release/latest/</code>.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Dupo Studio · Winnigames2024</div>
+    <div>
+      <a href="https://github.com/Winnigames2024-Original/DupoStudio">GitHub</a> ·
+      <a href="/DupoStudio/releases/">Релизы</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Показываем, что именно не нашлось — так понятнее, где опечатка.
+  (function () {
+    var box = document.getElementById('asked');
+    var path = location.pathname + location.search;
+
+    if (!path || path === '/DupoStudio/404.html') { box.style.display = 'none'; return; }
+    box.innerHTML = 'Запрошено: <b></b>';
+    box.querySelector('b').textContent = path;
+  })();
+</script>
+
+</body>
+</html>
