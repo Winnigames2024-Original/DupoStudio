@@ -3,6 +3,39 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
 нумерация по [SemVer](https://semver.org/lang/ru/).
 
+## [0.0.4] — 2026-10-27
+
+### Свой файл имён
+- `%TEMP%\dupo-Dupo\hosts.txt` — как HOSTS в Windows, только для
+  `Web.Server` и внутренних соединений студии и собранных приложений.
+  Системный файл при этом не трогается.
+- Модуль `Dupo.Hosts`: `Create`, `Add`, `Remove`, `Resolve`, `List`,
+  `Rewrite`, `Reload`, `Open`, `Text`.
+- Имена, указывающие на `127.0.0.1`, сервер слушает сам, а `Web.Get`
+  и `Web.Download` ходят по ним же. В студии: Инструменты → «Файл имён».
+
+### Запуск и сборка
+- **Запуск теперь как в Visual Studio**: F5 собирает проект в `.exe`
+  и запускает уже его, вывод идёт в окно «Вывод». Прежнее поведение
+  осталось на Ctrl+F5 — «Запустить без сборки».
+
+### Типы проектов
+- **Консольное приложение + DupoLang** и **Windows Forms + DupoLang**:
+  логика в `logic.dupolang`, C# зовёт её блоки через
+  `Dupo.Lang.ExecuteFrom`, ссылка на библиотеку подставляется сама.
+
+### Панель элементов
+- Вторая вкладка — **«Библиотеки»**: список сборок .NET с галочками
+  и кнопка «Добавить .dll...». Отмеченные пишутся в `project.dupo`
+  строкой `references=`, а `Dupo.CSharp` сам подставляет их при сборке.
+
+### Подсказки и помощник
+- Подсказки появляются **по ходу набора**, а не только после точки
+  и по Ctrl+Space; внутри строк и комментариев не мешают.
+- Помощник умеет спрашивать **Ollama на этом компьютере** — бесплатно
+  и без ключа. Настройка проверяет, запущена ли она, и показывает
+  скачанные модели.
+
 ## [0.0.3] — 2026-10-27
 
 ### Сайт
@@ -175,6 +208,7 @@
 - `DupoStudioSetup.exe` — установка для пользователя, без прав администратора:
   ярлыки, запись в список программ, связывание `.dupolang` и `.dapp`, удаление.
 
+[0.0.4]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v0.0.4
 [0.0.3]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v0.0.3
 [0.0.2]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v0.0.2
 [0.0.1]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v0.0.1

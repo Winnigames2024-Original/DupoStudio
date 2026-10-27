@@ -1,0 +1,9 @@
+# Свойства проекта Dupo Studio
+name=HostsDemo
+product=Dupo Studio
+author=Winnigames2024
+version=1.0
+description=Свой файл имён для DupoWebServer
+namespace=HostsDemo
+javapackage=com.winnigames2024.hostsdemo
+singleexe=1

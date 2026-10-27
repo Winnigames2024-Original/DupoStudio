@@ -33,7 +33,38 @@ namespace DupoLang
         public bool Fallback;
 
         public bool Running { get; private set; }
-        public string Url { get { return "http://localhost:" + Port + "/"; } }
+        public string Url
+        {
+            get
+            {
+                // Если в своём файле имён на этот сервер заведено имя,
+                // показываем его: ссылка получается человеческой.
+                string name = HostName;
+                return "http://" + (name.Length > 0 ? name : "localhost") + ":" + Port + "/";
+            }
+        }
+
+        /// <summary>Имя из файла dupo-Dupo\hosts.txt, указывающее на этот сервер.</summary>
+        public string HostName
+        {
+            get
+            {
+                try
+                {
+                    foreach (object line in DupoHosts.List())
+                    {
+                        var parts = Val.Str(line).Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length < 2) continue;
+
+                        string address = parts[0];
+                        if (address == "127.0.0.1" || address == "localhost" || address == "::1")
+                            return parts[1];
+                    }
+                }
+                catch { }
+                return "";
+            }
+        }
 
         HttpListener listener;
         Thread worker;
@@ -116,6 +147,15 @@ namespace DupoLang
             listener.Prefixes.Add("http://localhost:" + Port + "/");
             listener.Prefixes.Add("http://127.0.0.1:" + Port + "/");
 
+            // Имена из своего файла dupo-Dupo\hosts.txt, которые смотрят
+            // на эту машину, сервер слушает тоже — как будто их прописали
+            // в системном HOSTS, только систему мы не трогаем.
+            foreach (string name in LocalNames())
+            {
+                try { listener.Prefixes.Add("http://" + name + ":" + Port + "/"); }
+                catch { }
+            }
+
             try { listener.Start(); }
             catch (Exception ex)
             {
@@ -131,6 +171,10 @@ namespace DupoLang
             Log("Сервер запущен: " + Url);
             Log("Папка: " + Root);
             Log("Главный файл: " + IndexName + ".*  →  " + IndexFiles);
+
+            var names = LocalNames();
+            if (names.Count > 0)
+                Log("Имена из " + DupoHosts.FileName + ": " + string.Join(", ", names.ToArray()));
             if (PhpTools.Instance.IsInstalled) Log("PHP включён: " + PhpTools.Instance.Version);
         }
 
@@ -155,6 +199,28 @@ namespace DupoLang
                 catch { break; }
                 ThreadPool.QueueUserWorkItem(delegate (object o) { SafeHandle((HttpListenerContext)o); }, ctx);
             }
+        }
+
+        /// <summary>Имена из своего файла, указывающие на эту машину.</summary>
+        List<string> LocalNames()
+        {
+            var res = new List<string>();
+            try
+            {
+                foreach (object line in DupoHosts.List())
+                {
+                    var parts = Val.Str(line).Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length < 2) continue;
+
+                    string address = parts[0];
+                    if (address != "127.0.0.1" && address != "localhost" && address != "::1") continue;
+
+                    for (int i = 1; i < parts.Length; i++)
+                        if (!res.Contains(parts[i])) res.Add(parts[i]);
+                }
+            }
+            catch { }
+            return res;
         }
 
         void SafeHandle(HttpListenerContext ctx)

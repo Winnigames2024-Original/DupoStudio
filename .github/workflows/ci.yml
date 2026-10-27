@@ -77,6 +77,9 @@ jobs:
           & "tools/DupoLang.exe" --check "Projects/ServiceDemo/main.dupolang"
           if ($LASTEXITCODE -ne 0) { throw "ServiceDemo не разобрался" }
 
+          & "tools/DupoLang.exe" --check "Projects/HostsDemo/main.dupolang"
+          if ($LASTEXITCODE -ne 0) { throw "HostsDemo не разобрался" }
+
           & "tools/DupoHost.exe" "Projects/DataDemo/main.dupolang"
           if ($LASTEXITCODE -ne 0) { throw "DataDemo не выполнился" }
 

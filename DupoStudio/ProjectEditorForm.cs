@@ -20,6 +20,7 @@ namespace DupoStudio
         ProjectSettings project = new ProjectSettings();
         Thread runThread;
         Interp interp;
+        Process started;
         bool running;
 
         /// <summary>Пользователь закрыл проект — надо вернуться в стартовое окно.</summary>
@@ -60,7 +61,8 @@ namespace DupoStudio
             miClose.Click += delegate { CloseProject(); };
             miExit.Click += delegate { Close(); };
 
-            miStart.Click += delegate { RunScript(); };
+            miStart.Click += delegate { RunBuilt(); };
+            miStartFast.Click += delegate { RunScript(); };
             miStop.Click += delegate { StopScript(); };
             miBuild.Click += delegate { BuildApp(); };
             miBuildExe.Click += delegate { BuildSingleExe(); };
@@ -80,6 +82,7 @@ namespace DupoStudio
             miSvcStop.Click += delegate { ServiceAction("stop"); };
             miSvcStatus.Click += delegate { ServiceStatus(); };
             miSvcQueue.Click += delegate { QueueBuild(); };
+            miHosts.Click += delegate { OpenHosts(); };
 
             miViewExplorer.Click += delegate { TogglePane("Обозреватель решений"); };
             miViewProps.Click += delegate { TogglePane("Свойства"); };
@@ -97,6 +100,19 @@ namespace DupoStudio
             dock.Changed += delegate { RefreshView(); };
 
             toolbox.SelectionChanged += delegate { };
+            toolbox.GetReferences = delegate { return project.References; };
+            toolbox.ReferencesChanged += delegate
+            {
+                try
+                {
+                    project.Save();
+                    Log("Библиотеки проекта сохранены: " +
+                        (project.References.Count == 0 ? "только стандартные"
+                                                       : string.Join(", ", project.References.ToArray())),
+                        Theme.Ok);
+                }
+                catch (Exception ex) { Log("Не сохранилось: " + ex.Message, Theme.Err); }
+            };
             designer.PickKind = delegate { return toolbox.Selected; };
             designer.Placed += delegate { toolbox.Reset(); ShowDesignerProps(); };
             designer.SelectionChanged += delegate { ShowDesignerProps(); };
@@ -115,7 +131,7 @@ namespace DupoStudio
             tbNew.Click += delegate { NewProject(); };
             tbOpen.Click += delegate { OpenProjectDialog(); };
             tbSave.Click += delegate { SaveActive(); };
-            tbRun.Click += delegate { RunScript(); };
+            tbRun.Click += delegate { RunBuilt(); };
             tbStop.Click += delegate { StopScript(); };
             tbPhp.Click += delegate { InstallPhp(); };
             tbBrowser.Click += delegate { OpenBrowser(); };
@@ -247,6 +263,7 @@ namespace DupoStudio
             ShowDesigner(false);
             ShowProjectProps();
             assistant.OpenProject(dir);
+            toolbox.LoadReferences();
 
             string main = Path.Combine(dir, "main.dupolang");
             if (File.Exists(main)) OpenFile(main);
@@ -317,6 +334,88 @@ namespace DupoStudio
 
         // ---------------- запуск ----------------
 
+        /// <summary>
+        /// Запуск как в Visual Studio: проект собирается в .exe,
+        /// и запускается уже он. Вывод идёт в окно «Вывод».
+        /// </summary>
+        void RunBuilt()
+        {
+            if (running) { Log("Уже запущено — сначала «Стоп».", Theme.Err); return; }
+            if (projectDir == null) { Log("Сначала откройте проект.", Theme.Err); return; }
+
+            SaveAll();
+            console.Clear();
+
+            Log("▶  Сборка " + Path.GetFileName(projectDir) + "...", Theme.Info);
+            Log(new string('-', 60), Theme.Dim);
+
+            string exe = BuildSingleExe();
+            if (exe == null || !File.Exists(exe))
+            {
+                Log("Запускать нечего — сборка не дала exe.", Theme.Err);
+                return;
+            }
+
+            Log("", Theme.Dim);
+            Log("▶  " + Path.GetFileName(exe), Theme.Info);
+            Log(new string('-', 60), Theme.Dim);
+
+            running = true;
+            UpdateRunState();
+
+            string path = exe;
+            runThread = new Thread(delegate ()
+            {
+                try { Spawn(path); }
+                catch (ThreadAbortException) { }
+                catch (Exception ex) { Log("✖  " + ex.Message, Theme.Err); }
+                finally
+                {
+                    try { BeginInvoke(new Action(FinishRun)); }
+                    catch { }
+                }
+            });
+            runThread.IsBackground = true;
+            runThread.Start();
+        }
+
+        /// <summary>Запустить собранный exe и показать его вывод.</summary>
+        void Spawn(string exe)
+        {
+            var psi = new ProcessStartInfo(exe);
+            psi.UseShellExecute = false;
+            psi.CreateNoWindow = true;
+            psi.RedirectStandardOutput = true;
+            psi.RedirectStandardError = true;
+            psi.StandardOutputEncoding = Encoding.UTF8;
+            psi.StandardErrorEncoding = Encoding.UTF8;
+            psi.WorkingDirectory = Path.GetDirectoryName(exe);
+
+            using (var p = Process.Start(psi))
+            {
+                started = p;
+
+                p.OutputDataReceived += delegate (object s2, DataReceivedEventArgs e)
+                {
+                    if (e.Data != null) Log(e.Data, Theme.Text);
+                };
+                p.ErrorDataReceived += delegate (object s2, DataReceivedEventArgs e)
+                {
+                    if (e.Data != null) Log(e.Data, Theme.Err);
+                };
+
+                p.BeginOutputReadLine();
+                p.BeginErrorReadLine();
+                p.WaitForExit();
+
+                Log("", Theme.Dim);
+                Log(p.ExitCode == 0 ? "Готово." : "Завершилось с кодом " + p.ExitCode,
+                    p.ExitCode == 0 ? Theme.Ok : Theme.Warn);
+
+                started = null;
+            }
+        }
+
         void RunScript()
         {
             if (running) { Log("Уже запущено — сначала «Стоп».", Theme.Err); return; }
@@ -376,6 +475,13 @@ namespace DupoStudio
 
         void StopScript()
         {
+            if (started != null)
+            {
+                try { if (!started.HasExited) started.Kill(); }
+                catch { }
+                started = null;
+            }
+
             if (interp != null) { interp.Shutdown(); interp = null; }
             if (runThread != null && runThread.IsAlive)
             {
@@ -395,6 +501,7 @@ namespace DupoStudio
         void UpdateRunState()
         {
             tbRun.Enabled = miStart.Enabled = !running;
+            miStartFast.Enabled = !running;
             tbStop.Enabled = miStop.Enabled = running;
             Status(running ? "Выполняется..." : "Готово");
         }
@@ -925,6 +1032,24 @@ namespace DupoStudio
             }
         }
 
+        /// <summary>Свой файл имён — как HOSTS, только для Dupo.</summary>
+        void OpenHosts()
+        {
+            DupoHosts.Log = delegate (string s2) { Log(s2, Theme.Info); };
+
+            try
+            {
+                string path = DupoHosts.Create();
+                Log("Файл имён: " + path, Theme.Info);
+                Log("Имён прописано: " + DupoHosts.Count, Theme.Dim);
+
+                foreach (object line in DupoHosts.List()) Log("  " + Val.Str(line), Theme.Dim);
+
+                DupoHosts.Open();
+            }
+            catch (Exception ex) { Log("Файл имён не открылся: " + ex.Message, Theme.Err); }
+        }
+
         void OpenToolsFolder()
         {
             if (!BuildTools.Instance.IsInstalled)
@@ -964,9 +1089,9 @@ namespace DupoStudio
         // ---------------- сборка ----------------
 
         /// <summary>Один exe: хост-рантайм с приложением в хвосте.</summary>
-        void BuildSingleExe()
+        string BuildSingleExe()
         {
-            if (projectDir == null) { Log("Сначала откройте проект.", Theme.Err); return; }
+            if (projectDir == null) { Log("Сначала откройте проект.", Theme.Err); return null; }
 
             SaveAll();
             DappPackage.Log = delegate (string s) { Log(s, Theme.Text); };
@@ -976,7 +1101,7 @@ namespace DupoStudio
             if (host == null)
             {
                 Log("Рантайм DupoHost не найден ни рядом со студией, ни внутри неё.", Theme.Err);
-                return;
+                return null;
             }
 
             string name = Path.GetFileName(projectDir);
@@ -1008,8 +1133,13 @@ namespace DupoStudio
 
                 Log("Готово — это один самостоятельный файл, DLL рядом не нужны.", Theme.Ok);
                 RefreshTree();
+                return outExe;
             }
-            catch (Exception ex) { Log("✖  Сборка не удалась: " + ex.Message, Theme.Err); }
+            catch (Exception ex)
+            {
+                Log("✖  Сборка не удалась: " + ex.Message, Theme.Err);
+                return null;
+            }
             finally { try { if (File.Exists(temp)) File.Delete(temp); } catch { } }
         }
 

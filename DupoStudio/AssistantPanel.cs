@@ -172,7 +172,11 @@ namespace DupoStudio
         void RefreshMode()
         {
             var online = Assistant.LoadOnline();
-            lblMode.Text = online.Ready ? "сервис подключён" : "база знаний";
+
+            if (online.Ollama) lblMode.Text = "Ollama на этом компьютере";
+            else if (online.Ready) lblMode.Text = "сервис подключён";
+            else lblMode.Text = "база знаний";
+
             lblMode.ForeColor = online.Ready ? Theme.Ok : Theme.Dim;
         }
 
@@ -379,9 +383,10 @@ namespace DupoStudio
                 if (dlg.ShowDialog(this) != DialogResult.OK) return;
                 RefreshMode();
 
-                Add("помощник", Assistant.LoadOnline().Ready
-                    ? "Сервис подключён — теперь отвечаю через него, а если он не отзовётся, вернусь к своей базе знаний."
-                    : "Сервис отключён — отвечаю по своей базе знаний.");
+                var now = Assistant.LoadOnline();
+                Add("помощник", now.Ready
+                    ? "Подключено: " + now.Where + ". Если не отзовётся — вернусь к своей базе знаний."
+                    : "Внешний сервис отключён — отвечаю по своей базе знаний.");
                 Store();
             }
         }
@@ -399,6 +404,8 @@ namespace DupoStudio
         readonly TextBox endpoint = new TextBox();
         readonly TextBox key = new TextBox();
         readonly TextBox model = new TextBox();
+        readonly CheckBox ollama = new CheckBox();
+        readonly Label ollamaState = new Label();
 
         public AssistantSetupForm()
         {
@@ -407,7 +414,7 @@ namespace DupoStudio
             StartPosition = FormStartPosition.CenterParent;
             MinimizeBox = false;
             MaximizeBox = false;
-            ClientSize = new Size(560, 268);
+            ClientSize = new Size(560, 312);
             BackColor = Theme.Back;
             ForeColor = Theme.Text;
             Font = new Font("Segoe UI", 9f);
@@ -416,23 +423,37 @@ namespace DupoStudio
             hint.Bounds = new Rectangle(16, 12, 528, 56);
             hint.ForeColor = Theme.Dim;
             hint.Text = "Помощник работает и без этого — по своей базе знаний о DupoLang, C# и Java.\r\n" +
-                        "Если указать адрес сервиса, совместимого с OpenAI, и ключ, он будет отвечать через него.\r\n" +
-                        "Ключ хранится только на этом компьютере и в проект не попадает.";
+                        "Ollama крутится прямо на этом компьютере: ключ и регистрация не нужны.\r\n" +
+                        "Либо укажите адрес сервиса, совместимого с OpenAI, и ключ к нему.";
             Controls.Add(hint);
 
-            Row("Адрес:", endpoint, 80, "https://api.openai.com/v1/chat/completions");
-            Row("Ключ:", key, 116, "");
-            Row("Модель:", model, 152, "gpt-4o-mini");
+            Row("Адрес:", endpoint, 126, "https://api.openai.com/v1/chat/completions");
+            Row("Ключ:", key, 158, "");
+            Row("Модель:", model, 190, "qwen2.5-coder или gpt-4o-mini");
             key.UseSystemPasswordChar = true;
+
+            ollama.Text = "Спрашивать Ollama на этом компьютере (бесплатно, без ключа)";
+            ollama.Bounds = new Rectangle(18, 74, 526, 22);
+            ollama.ForeColor = Theme.Text;
+            ollama.CheckedChanged += delegate { Mode(); };
+            Controls.Add(ollama);
+
+            ollamaState.Bounds = new Rectangle(38, 98, 506, 20);
+            ollamaState.ForeColor = Theme.Dim;
+            Controls.Add(ollamaState);
 
             var saved = Assistant.LoadOnline();
             endpoint.Text = saved.Endpoint;
             key.Text = saved.Key;
             model.Text = saved.Model;
+            ollama.Checked = saved.Ollama;
+            Mode();
+
+            Load += delegate { Probe(); };
 
             var ok = new Button();
             ok.Text = "Сохранить";
-            ok.Bounds = new Rectangle(330, 214, 104, 30);
+            ok.Bounds = new Rectangle(330, 258, 104, 30);
             Flat(ok);
             ok.BackColor = Theme.Accent;
             ok.ForeColor = Color.White;
@@ -442,7 +463,8 @@ namespace DupoStudio
                 {
                     Endpoint = endpoint.Text.Trim(),
                     Key = key.Text.Trim(),
-                    Model = model.Text.Trim()
+                    Model = model.Text.Trim(),
+                    Ollama = ollama.Checked
                 });
                 DialogResult = DialogResult.OK;
                 Close();
@@ -451,7 +473,7 @@ namespace DupoStudio
 
             var off = new Button();
             off.Text = "Отключить";
-            off.Bounds = new Rectangle(214, 214, 104, 30);
+            off.Bounds = new Rectangle(214, 258, 104, 30);
             Flat(off);
             off.Click += delegate
             {
@@ -463,13 +485,64 @@ namespace DupoStudio
 
             var cancel = new Button();
             cancel.Text = "Отмена";
-            cancel.Bounds = new Rectangle(444, 214, 100, 30);
+            cancel.Bounds = new Rectangle(444, 258, 100, 30);
             cancel.DialogResult = DialogResult.Cancel;
             Flat(cancel);
             Controls.Add(cancel);
 
             AcceptButton = ok;
             CancelButton = cancel;
+        }
+
+        /// <summary>Поля сервиса нужны только без Ollama.</summary>
+        void Mode()
+        {
+            bool manual = !ollama.Checked;
+            endpoint.Enabled = manual;
+            key.Enabled = manual;
+            Probe();
+        }
+
+        void Probe()
+        {
+            if (!ollama.Checked)
+            {
+                ollamaState.Text = "";
+                return;
+            }
+
+            ollamaState.Text = "Проверяю Ollama...";
+
+            var t = new Thread(delegate ()
+            {
+                bool alive = Assistant.OllamaAlive;
+                var models = alive ? Assistant.OllamaModels() : new List<string>();
+
+                try
+                {
+                    BeginInvoke(new Action(delegate
+                    {
+                        if (!alive)
+                        {
+                            ollamaState.Text = "Ollama не отвечает на " + Assistant.OllamaUrl +
+                                               " — поставьте её с ollama.com и запустите.";
+                            ollamaState.ForeColor = Theme.Warn;
+                            return;
+                        }
+
+                        ollamaState.ForeColor = Theme.Ok;
+                        ollamaState.Text = models.Count > 0
+                            ? "Ollama работает. Модели: " + string.Join(", ", models.Take(4).ToArray())
+                            : "Ollama работает, но моделей нет — выполните: ollama pull qwen2.5-coder";
+
+                        if (model.Text.Trim().Length == 0 && models.Count > 0) model.Text = models[0];
+                    }));
+                }
+                catch { }
+            });
+
+            t.IsBackground = true;
+            t.Start();
         }
 
         void Row(string caption, TextBox box, int y, string placeholder)

@@ -10,11 +10,12 @@ namespace DupoStudio
         MenuStrip menuMain;
         ToolStripMenuItem miFile, miNewProject, miNewJava, miOpenProject, miSave, miSaveAll;
         ToolStripMenuItem miExport, miImport, miAutostart, miClose, miExit;
-        ToolStripMenuItem miRun, miStart, miStop, miBuild, miBuildExe;
+        ToolStripMenuItem miRun, miStart, miStartFast, miStop, miBuild, miBuildExe;
         ToolStripMenuItem miTools, miPhpInstall, miPhpInfo, miPhpRemove;
         ToolStripMenuItem miJdkInstall, miJdkInfo, miJdkRemove, miBrowser, miFolder;
         ToolStripMenuItem miToolsGet, miToolsFolder, miToolsRemove;
         ToolStripMenuItem miService, miSvcInstall, miSvcStart, miSvcStop, miSvcRemove, miSvcStatus, miSvcQueue;
+        ToolStripMenuItem miHosts;
         ToolStripMenuItem miProject, miProperties, miResources;
         ToolStripMenuItem miView, miViewExplorer, miViewProps, miViewToolbox, miViewConsole;
         ToolStripMenuItem miViewAssistant, miViewDockAll;
@@ -63,6 +64,7 @@ namespace DupoStudio
 
             miRun = new ToolStripMenuItem("Запуск");
             miStart = new ToolStripMenuItem("Запустить");
+            miStartFast = new ToolStripMenuItem("Запустить без сборки");
             miStop = new ToolStripMenuItem("Остановить");
             miBuildExe = new ToolStripMenuItem("Собрать в один .exe");
             miBuild = new ToolStripMenuItem("Собрать папку с файлами");
@@ -78,6 +80,7 @@ namespace DupoStudio
             miToolsFolder = new ToolStripMenuItem("Папка BuildTools");
             miToolsRemove = new ToolStripMenuItem("Удалить BuildTools");
 
+            miHosts = new ToolStripMenuItem("Файл имён (hosts)");
             miService = new ToolStripMenuItem("Фоновый сервис");
             miSvcInstall = new ToolStripMenuItem("Установить сервис");
             miSvcStart = new ToolStripMenuItem("Запустить");
@@ -164,13 +167,13 @@ namespace DupoStudio
                 miAutostart, miClose, new ToolStripSeparator(), miExit });
 
             miRun.DropDownItems.AddRange(new ToolStripItem[] {
-                miStart, miStop, new ToolStripSeparator(), miBuildExe, miBuild });
+                miStart, miStartFast, miStop, new ToolStripSeparator(), miBuildExe, miBuild });
 
             miTools.DropDownItems.AddRange(new ToolStripItem[] {
                 miPhpInstall, miPhpInfo, miPhpRemove, new ToolStripSeparator(),
                 miJdkInstall, miJdkInfo, miJdkRemove, new ToolStripSeparator(),
                 miToolsGet, miToolsFolder, miToolsRemove, new ToolStripSeparator(),
-                miService, new ToolStripSeparator(),
+                miService, miHosts, new ToolStripSeparator(),
                 miBrowser, miFolder });
 
             miProject.DropDownItems.AddRange(new ToolStripItem[] {
@@ -186,6 +189,7 @@ namespace DupoStudio
             miSaveAll.ShortcutKeys = Keys.Control | Keys.Shift | Keys.S;
             miExport.ShortcutKeys = Keys.Control | Keys.E;
             miStart.ShortcutKeys = Keys.F5;
+            miStartFast.ShortcutKeys = Keys.Control | Keys.F5;
             miStop.ShortcutKeys = Keys.Shift | Keys.F5;
             miBuildExe.ShortcutKeys = Keys.Control | Keys.B;
             miClose.ShortcutKeys = Keys.Control | Keys.W;

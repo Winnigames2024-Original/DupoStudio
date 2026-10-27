@@ -64,6 +64,16 @@ namespace DupoStudio
                 "Приложение с окном на WinForms: Form1 с кнопкой, сборка в winexe, " +
                 "то есть без чёрного окна консоли."),
 
+            new ProjectTemplate("csharp-dupolang", "C#", "C# + DupoLang",
+                "Консольное приложение + DupoLang", "MyCsDupoApp",
+                "C# и DupoLang вместе: логика в logic.dupolang, а C# зовёт её блоки " +
+                "через Dupo.Lang.ExecuteFrom. Ссылка на библиотеку подставляется сама."),
+
+            new ProjectTemplate("winforms-dupolang", "C#", "WinForms + DupoLang",
+                "Windows Forms (.NET 4.8) + DupoLang", "MyFormsDupoApp",
+                "Окно на WinForms, а логика — в logic.dupolang: кнопка вызывает блок def " +
+                "через Dupo.Lang.ExecuteFrom. Форма правится конструктором по F7."),
+
             new ProjectTemplate("csharp-library", "C#", "C#",
                 "Библиотека классов (.dll)", "MyLibrary",
                 "Библиотека на C#: собирается в .dll, которую потом подключают " +

@@ -24,6 +24,9 @@ namespace DupoStudio
         public string JavaPackage = "";
         public bool SingleExe = true;
 
+        /// <summary>Библиотеки, которые подключаются при сборке C#.</summary>
+        public readonly List<string> References = new List<string>();
+
         public string FilePath { get { return Path.Combine(Dir, FileName); } }
 
         public string ResourcesDir { get { return Path.Combine(Dir, ResourceSet.FolderName); } }
@@ -58,6 +61,12 @@ namespace DupoStudio
                     else if (key == "description") s.Description = value;
                     else if (key == "namespace") s.Namespace = value;
                     else if (key == "javapackage") s.JavaPackage = value;
+                    else if (key == "references")
+                    {
+                        foreach (string r in value.Split(';', ','))
+                            if (r.Trim().Length > 0 && !s.References.Contains(r.Trim()))
+                                s.References.Add(r.Trim());
+                    }
                     else if (key == "singleexe") s.SingleExe = value == "1" || value == "true";
                 }
             }
@@ -79,6 +88,7 @@ namespace DupoStudio
                 lines.Add("description=" + Description);
                 lines.Add("namespace=" + Namespace);
                 lines.Add("javapackage=" + JavaPackage);
+                lines.Add("references=" + string.Join(";", References.ToArray()));
                 lines.Add("singleexe=" + (SingleExe ? "1" : "0"));
 
                 File.WriteAllLines(FilePath, lines.ToArray(), new UTF8Encoding(false));

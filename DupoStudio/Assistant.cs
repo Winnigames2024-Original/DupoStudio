@@ -113,15 +113,30 @@ namespace DupoStudio
         // настройки внешнего сервиса
         // ------------------------------------------------------------------
 
+        /// <summary>Ollama крутится на своём компьютере и ключа не просит.</summary>
+        public const string OllamaUrl = "http://localhost:11434";
+
         public class Online
         {
             public string Endpoint = "";
             public string Key = "";
             public string Model = "";
 
+            /// <summary>Спрашивать локальный Ollama — ключ не нужен.</summary>
+            public bool Ollama;
+
             public bool Ready
             {
-                get { return Endpoint.Trim().Length > 0 && Key.Trim().Length > 0; }
+                get
+                {
+                    if (Ollama) return true;
+                    return Endpoint.Trim().Length > 0 && Key.Trim().Length > 0;
+                }
+            }
+
+            public string Where
+            {
+                get { return Ollama ? "Ollama на этом компьютере" : "сервис " + Endpoint; }
             }
         }
 
@@ -151,6 +166,7 @@ namespace DupoStudio
                 o.Endpoint = Val.Str(m.Get("endpoint", ""));
                 o.Key = Val.Str(m.Get("key", ""));
                 o.Model = Val.Str(m.Get("model", ""));
+                o.Ollama = Val.Truth(m.Get("ollama", false));
             }
             catch { }
             return o;
@@ -164,14 +180,119 @@ namespace DupoStudio
                 m.Set("endpoint", o.Endpoint ?? "");
                 m.Set("key", o.Key ?? "");
                 m.Set("model", o.Model ?? "");
+                m.Set("ollama", o.Ollama);
                 File.WriteAllText(SettingsPath, JsonTools.Pretty(m), new UTF8Encoding(false));
             }
             catch { }
         }
 
+        /// <summary>Работает ли Ollama прямо сейчас.</summary>
+        public static bool OllamaAlive
+        {
+            get
+            {
+                try
+                {
+                    using (var wc = new WebClient())
+                    {
+                        wc.Headers.Add("User-Agent", "DupoStudio");
+                        wc.DownloadString(OllamaUrl + "/api/tags");
+                        return true;
+                    }
+                }
+                catch { return false; }
+            }
+        }
+
+        /// <summary>Модели, которые уже скачаны в Ollama.</summary>
+        public static List<string> OllamaModels()
+        {
+            var res = new List<string>();
+            try
+            {
+                string json;
+                using (var wc = new WebClient())
+                {
+                    wc.Headers.Add("User-Agent", "DupoStudio");
+                    wc.Encoding = Encoding.UTF8;
+                    json = wc.DownloadString(OllamaUrl + "/api/tags");
+                }
+
+                var root = JsonTools.Parse(json) as DupoMap;
+                var models = root == null ? null : root.Get("models") as List<object>;
+                if (models == null) return res;
+
+                foreach (object item in models)
+                {
+                    var m = item as DupoMap;
+                    if (m == null) continue;
+
+                    string name = Val.Str(m.Get("name", ""));
+                    if (name.Length > 0) res.Add(name);
+                }
+            }
+            catch { }
+            return res;
+        }
+
+        /// <summary>Спросить Ollama на этом компьютере.</summary>
+        static string AskOllama(Online o, string projectContext, List<ChatLine> history, string question)
+        {
+            var messages = new List<object>();
+
+            var sys = new DupoMap();
+            sys.Set("role", "system");
+            sys.Set("content", SystemPrompt(projectContext));
+            messages.Add(sys);
+
+            foreach (var l in history.Skip(Math.Max(0, history.Count - 12)))
+            {
+                var m = new DupoMap();
+                m.Set("role", l.Mine ? "user" : "assistant");
+                m.Set("content", l.Text);
+                messages.Add(m);
+            }
+
+            var ask = new DupoMap();
+            ask.Set("role", "user");
+            ask.Set("content", question);
+            messages.Add(ask);
+
+            string model = o.Model.Trim();
+            if (model.Length == 0)
+            {
+                var have = OllamaModels();
+                if (have.Count == 0)
+                    throw new InvalidOperationException(
+                        "в Ollama нет ни одной модели — скачайте её командой: ollama pull qwen2.5-coder");
+                model = have[0];
+            }
+
+            var body = new DupoMap();
+            body.Set("model", model);
+            body.Set("messages", messages);
+            body.Set("stream", false);
+
+            using (var wc = new WebClient())
+            {
+                wc.Encoding = Encoding.UTF8;
+                wc.Headers.Add("Content-Type", "application/json");
+
+                string answer = wc.UploadString(OllamaUrl + "/api/chat", "POST", JsonTools.Text(body));
+
+                var root = JsonTools.Parse(answer) as DupoMap;
+                var msg = root == null ? null : root.Get("message") as DupoMap;
+
+                string text = msg == null ? "" : Val.Str(msg.Get("content", ""));
+                return text.Trim().Length > 0 ? text : "Ollama ответил пусто.";
+            }
+        }
+
         /// <summary>Спросить внешний сервис. Возвращает ответ или бросает исключение.</summary>
         public static string AskOnline(Online o, string projectContext, List<ChatLine> history, string question)
         {
+            if (o.Ollama) return AskOllama(o, projectContext, history, question);
+
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
             var messages = new List<object>();
@@ -389,6 +510,9 @@ namespace DupoStudio
             { "Lang", new[] { "ExecuteFrom", "TextFrom", "NumberFrom", "TruthFrom", "Functions",
                               "HasFunction", "Arity", "Run", "Code", "Check", "Output", "Reset", "Version" } },
             { "Json", new[] { "Parse", "Read", "Text", "Pretty", "Save" } },
+            { "Hosts", new[] { "FilePath", "Exists", "Count", "Create", "Reload",
+                               "Resolve", "Knows", "List", "Rewrite", "Add", "Remove",
+                               "Open", "Text" } },
             { "Text", new[] { "Trim", "Upper", "Lower", "Replace", "Contains", "StartsWith",
                               "EndsWith", "IndexOf", "Cut", "Left", "Right", "Split", "Lines",
                               "Words", "Join", "Repeat", "Reverse", "PadLeft", "PadRight", "Capital",
@@ -740,6 +864,33 @@ Ctrl+S — сохранить, Ctrl+Space — подсказки."));
 `Resources`, а для переменных смотрят, каким типом те объявлены:
 после `Services.Service agent = ...` по `agent.` покажутся члены
 сервиса."));
+
+            t.Add(new Topic("Свой файл имён",
+                "hosts имена домен dupo-dupo имя сайта локальн",
+@"У студии есть свой файл имён — как HOSTS в Windows, но только для
+DupoWebServer и внутренних соединений. Системный файл при этом не трогается.
+
+Лежит он в папке `dupo-Dupo` во временных файлах, а формат тот же:
+
+```
+127.0.0.1    myapp.local
+127.0.0.1    api.dupo
+```
+
+Из кода:
+
+```
+using Dupo.Hosts
+
+Hosts.Create()
+Hosts.Add(""myapp.local"", ""127.0.0.1"")
+print(Hosts.List())
+print(Hosts.Resolve(""myapp.local""))
+```
+
+Имена, указывающие на 127.0.0.1, `Web.Server` слушает сам, а `Web.Get`
+и `Web.Download` ходят по ним же. В студии: Инструменты → «Файл имён».
+Работает и в приложениях, собранных студией."));
 
             t.Add(new Topic("Список команд", "команд список api справочник всё что умеет", Commands()));
 

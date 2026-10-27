@@ -126,13 +126,34 @@ namespace DupoStudio
         }
     }
 
-    /// <summary>Тулбокс: список элементов, которые можно положить на форму.</summary>
+    /// <summary>
+    /// Панель элементов: вкладка с контролами для формы и вкладка
+    /// с библиотеками для проекта на C#.
+    /// </summary>
     public class ToolboxPanel : Panel
     {
         public static readonly string[] Kinds =
         {
             "Button", "Label", "TextBox", "CheckBox", "RadioButton",
             "ListBox", "ComboBox", "ProgressBar", "PictureBox", "Panel", "GroupBox"
+        };
+
+        /// <summary>Сборки .NET, которые чаще всего подключают.</summary>
+        public static readonly string[] Assemblies =
+        {
+            "System.dll", "System.Core.dll", "System.Data.dll", "System.Xml.dll",
+            "System.Xml.Linq.dll", "System.Windows.Forms.dll", "System.Drawing.dll",
+            "System.Net.Http.dll", "System.Runtime.Serialization.dll",
+            "System.ServiceProcess.dll", "System.Configuration.dll",
+            "System.Management.dll", "System.Transactions.dll", "System.Web.dll",
+            "System.IO.Compression.dll", "System.IO.Compression.FileSystem.dll",
+            "Microsoft.CSharp.dll", "WindowsBase.dll", "System.Security.dll"
+        };
+
+        /// <summary>Эти подключаются всегда — их отмечать не нужно.</summary>
+        static readonly string[] Always =
+        {
+            "System.dll", "System.Core.dll", "System.Data.dll", "System.Xml.dll"
         };
 
         static readonly Dictionary<string, string> Names = new Dictionary<string, string>
@@ -143,8 +164,15 @@ namespace DupoStudio
             { "PictureBox", "Картинка" }, { "Panel", "Панель" }, { "GroupBox", "Рамка" }
         };
 
+        readonly TabControl tabs = new TabControl();
         readonly ListBox list = new ListBox();
         readonly Label hint = new Label();
+
+        readonly CheckedListBox libs = new CheckedListBox();
+        readonly Button addLib = new Button();
+        readonly Label libHint = new Label();
+
+        bool filling;
 
         /// <summary>Что выбрано сейчас; пусто — режим указателя.</summary>
         public string Selected
@@ -154,16 +182,35 @@ namespace DupoStudio
 
         public event EventHandler SelectionChanged;
 
+        /// <summary>Список библиотек поменяли — проект пора сохранить.</summary>
+        public event EventHandler ReferencesChanged;
+
+        /// <summary>Откуда брать и куда класть список библиотек.</summary>
+        public Func<List<string>> GetReferences = delegate { return new List<string>(); };
+
         public ToolboxPanel()
         {
             BackColor = Theme.Panel;
+
+            tabs.Dock = DockStyle.Fill;
+            tabs.BackColor = Theme.Panel;
+            Controls.Add(tabs);
+
+            tabs.TabPages.Add(Elements());
+            tabs.TabPages.Add(Libraries());
+        }
+
+        TabPage Elements()
+        {
+            var page = new TabPage("Элементы");
+            page.BackColor = Theme.Panel;
 
             hint.Dock = DockStyle.Bottom;
             hint.Height = 38;
             hint.ForeColor = Theme.Dim;
             hint.Padding = new Padding(8, 4, 8, 4);
             hint.Text = "Выберите элемент и щёлкните по форме.";
-            Controls.Add(hint);
+            page.Controls.Add(hint);
 
             list.Dock = DockStyle.Fill;
             list.BackColor = Theme.Panel;
@@ -179,12 +226,122 @@ namespace DupoStudio
                 var h = SelectionChanged;
                 if (h != null) h(this, EventArgs.Empty);
             };
-            Controls.Add(list);
+            page.Controls.Add(list);
             list.BringToFront();
+
+            return page;
+        }
+
+        TabPage Libraries()
+        {
+            var page = new TabPage("Библиотеки");
+            page.BackColor = Theme.Panel;
+
+            libHint.Dock = DockStyle.Bottom;
+            libHint.Height = 38;
+            libHint.ForeColor = Theme.Dim;
+            libHint.Padding = new Padding(8, 4, 8, 4);
+            libHint.Text = "Отмеченные подключаются при сборке C#.";
+            page.Controls.Add(libHint);
+
+            addLib.Dock = DockStyle.Bottom;
+            addLib.Height = 28;
+            addLib.Text = "Добавить .dll...";
+            addLib.FlatStyle = FlatStyle.Flat;
+            addLib.BackColor = Theme.Chrome;
+            addLib.ForeColor = Theme.Text;
+            addLib.FlatAppearance.BorderColor = Theme.Border;
+            addLib.Click += delegate { AddLibrary(); };
+            page.Controls.Add(addLib);
+
+            libs.Dock = DockStyle.Fill;
+            libs.BackColor = Theme.Panel;
+            libs.ForeColor = Theme.Text;
+            libs.BorderStyle = BorderStyle.None;
+            libs.CheckOnClick = true;
+            libs.IntegralHeight = false;
+            libs.ItemCheck += delegate (object s, ItemCheckEventArgs e)
+            {
+                if (filling) return;
+                BeginInvoke(new Action(SaveLibraries));
+            };
+            page.Controls.Add(libs);
+            libs.BringToFront();
+
+            return page;
+        }
+
+        /// <summary>Перечитать список библиотек из проекта.</summary>
+        public void LoadReferences()
+        {
+            filling = true;
+            try
+            {
+                var have = GetReferences() ?? new List<string>();
+
+                libs.Items.Clear();
+                foreach (string a in Assemblies)
+                    libs.Items.Add(a, have.Contains(a, StringComparer.OrdinalIgnoreCase));
+
+                // Свои dll, которых нет в списке — показываем ниже.
+                foreach (string a in have)
+                    if (!Assemblies.Contains(a, StringComparer.OrdinalIgnoreCase))
+                        libs.Items.Add(a, true);
+
+                // Обязательные помечаем и запрещаем снимать — они и так всегда.
+                for (int i = 0; i < libs.Items.Count; i++)
+                    if (Always.Contains(libs.Items[i].ToString(), StringComparer.OrdinalIgnoreCase))
+                        libs.SetItemChecked(i, true);
+            }
+            finally { filling = false; }
+        }
+
+        void SaveLibraries()
+        {
+            var picked = new List<string>();
+            foreach (object item in libs.CheckedItems)
+            {
+                string name = item.ToString();
+                if (Always.Contains(name, StringComparer.OrdinalIgnoreCase)) continue;
+                picked.Add(name);
+            }
+
+            var target = GetReferences();
+            if (target == null) return;
+
+            target.Clear();
+            target.AddRange(picked);
+
+            var h = ReferencesChanged;
+            if (h != null) h(this, EventArgs.Empty);
+        }
+
+        void AddLibrary()
+        {
+            using (var dlg = new OpenFileDialog())
+            {
+                dlg.Title = "Выберите библиотеку";
+                dlg.Filter = "Библиотеки (*.dll)|*.dll|Все файлы (*.*)|*.*";
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+                var target = GetReferences();
+                if (target == null) return;
+
+                string path = dlg.FileName;
+                if (!target.Contains(path, StringComparer.OrdinalIgnoreCase)) target.Add(path);
+
+                LoadReferences();
+
+                var h = ReferencesChanged;
+                if (h != null) h(this, EventArgs.Empty);
+            }
         }
 
         /// <summary>Вернуться к указателю после того, как элемент положили.</summary>
         public void Reset() { list.SelectedIndex = 0; }
+
+        /// <summary>Показать вкладку с библиотеками.</summary>
+        public void ShowLibraries() { tabs.SelectedIndex = 1; }
 
         /// <summary>Русское название типа.</summary>
         public static string NameOf(string kind)

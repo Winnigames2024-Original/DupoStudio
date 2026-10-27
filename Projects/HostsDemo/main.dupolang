@@ -1,0 +1,26 @@
+// HostsDemo — свой файл имён для Web.Server и внутренних соединений
+using Dupo.Hosts
+using Dupo.Web
+
+print("=== Файл имён Dupo ===")
+print("Файл: " + Hosts.Create())
+print("")
+
+Hosts.Add("myapp.local", "127.0.0.1")
+Hosts.Add("api.dupo", "127.0.0.1")
+
+print("Имён прописано: " + Hosts.Count)
+print(Hosts.List())
+print("")
+
+print("myapp.local → " + Hosts.Resolve("myapp.local"))
+print("Знаем ли yandex.ru: " + Hosts.Knows("yandex.ru"))
+print("Адрес после подмены: " + Hosts.Rewrite("http://myapp.local:8080/page"))
+print("")
+
+// Сервер сам слушает имена, которые смотрят на 127.0.0.1
+Web.Server site = new Web.Server(8080, "www", "index")
+print("Адрес сервера: " + site.Url)
+
+Hosts.Remove("api.dupo")
+print("После удаления: " + Hosts.Count)

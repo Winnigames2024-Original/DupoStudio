@@ -48,6 +48,8 @@ namespace DupoStudio
                     case "csharp-console": CsConsole(dir, name); break;
                     case "csharp-forms": CsForms(dir, name); break;
                     case "csharp-library": CsLibrary(dir, name); break;
+                    case "csharp-dupolang": CsWithDupo(dir, name); break;
+                    case "winforms-dupolang": FormsWithDupo(dir, name); break;
                     case "cpp-console": CppConsole(dir, name); break;
                     case "cpp-window": CppWindow(dir, name); break;
                     case "java": Java(dir, name); break;
@@ -248,6 +250,156 @@ namespace DupoStudio
             Save(dir, Path.Combine("src", "Program.cs"), WinFormsCode.Program(form));
 
             Save(dir, "main.dupolang", CsScript(name, "Forms", "приложение WinForms"));
+        }
+
+        /// <summary>Логика на DupoLang, которую зовёт C#.</summary>
+        static void Logic(string dir, string name)
+        {
+            var code = new StringBuilder();
+            code.AppendLine("// logic.dupolang — блоки def для " + name);
+            code.AppendLine("using Dupo.Text");
+            code.AppendLine("using Dupo.Data");
+            code.AppendLine();
+            code.AppendLine("def Привет(имя) {");
+            code.AppendLine("    return " + Q + "Привет, " + Q + " + имя + " + Q + "!" + Q + "");
+            code.AppendLine("}");
+            code.AppendLine();
+            code.AppendLine("def Сумма(a, b) {");
+            code.AppendLine("    return a + b");
+            code.AppendLine("}");
+            code.AppendLine();
+            code.AppendLine("def Громко(текст) {");
+            code.AppendLine("    return Text.Upper(Text.Trim(текст))");
+            code.AppendLine("}");
+            Save(dir, "logic.dupolang", code.ToString());
+        }
+
+        /// <summary>Скрипт сборки, который ещё и кладёт logic.dupolang рядом с exe.</summary>
+        static string DupoScript(string name, string method, string what)
+        {
+            var code = new StringBuilder();
+            code.AppendLine("// " + name + " — " + what + ": C# зовёт блоки def из logic.dupolang");
+            code.AppendLine("using Dupo.CSharp");
+            code.AppendLine("using Dupo.Lang");
+            code.AppendLine("using Dupo.System.Files");
+            code.AppendLine();
+            code.AppendLine("print(" + Q + "Блоки: " + Q + " + Lang.Functions(" + Q + "logic.dupolang" + Q + "))");
+            code.AppendLine();
+            code.AppendLine("string exe = CSharp." + method + "(" + Q + "src" + Q + ", " +
+                            Q + "build/" + name + ".exe" + Q + ")");
+            code.AppendLine();
+            code.AppendLine("// Файл с блоками должен лежать рядом с exe");
+            code.AppendLine("Files.Copy(" + Q + "logic.dupolang" + Q + ", " + Q + "build/logic.dupolang" + Q + ")");
+            code.AppendLine();
+            code.AppendLine("print(" + Q + Q + ")");
+            code.AppendLine("CSharp.Launch(exe, " + Q + Q + ")");
+            return code.ToString();
+        }
+
+        static void CsWithDupo(string dir, string name)
+        {
+            string ns = Ident(name);
+
+            var cs = new StringBuilder();
+            cs.AppendLine("using System;");
+            cs.AppendLine("using DupoLang;");
+            cs.AppendLine();
+            cs.AppendLine("namespace " + ns);
+            cs.AppendLine("{");
+            cs.AppendLine("    class Program");
+            cs.AppendLine("    {");
+            cs.AppendLine("        const string Logic = \"logic.dupolang\";");
+            cs.AppendLine();
+            cs.AppendLine("        static void Main(string[] args)");
+            cs.AppendLine("        {");
+            cs.AppendLine("            Console.OutputEncoding = System.Text.Encoding.UTF8;");
+            cs.AppendLine("            Dupo.Lang.Output = Console.WriteLine;");
+            cs.AppendLine();
+            cs.AppendLine("            Console.WriteLine(Dupo.Lang.TextFrom(Logic, \"Привет\", \"" + name + "\"));");
+            cs.AppendLine("            Console.WriteLine(\"2 + 3 = \" + Dupo.Lang.NumberFrom(Logic, \"Сумма\", 2, 3));");
+            cs.AppendLine("            Console.WriteLine(Dupo.Lang.TextFrom(Logic, \"Громко\", \"  тише едешь  \"));");
+            cs.AppendLine("        }");
+            cs.AppendLine("    }");
+            cs.AppendLine("}");
+            Save(dir, Path.Combine("src", "Program.cs"), cs.ToString());
+
+            Logic(dir, name);
+            Save(dir, "main.dupolang", DupoScript(name, "Build", "консольное приложение"));
+        }
+
+        static void FormsWithDupo(string dir, string name)
+        {
+            string ns = Ident(name);
+            string src = Path.Combine(dir, "src");
+            Directory.CreateDirectory(src);
+
+            var form = new WinFormsForm();
+            form.DesignerPath = Path.Combine(src, "Form1" + WinFormsCode.DesignerSuffix);
+            form.Namespace = ns;
+            form.ClassName = "Form1";
+            form.Title = name;
+            form.ClientSize = new System.Drawing.Size(460, 240);
+
+            var label = new DesignItem();
+            label.Kind = "Label";
+            label.Name = "label1";
+            label.Caption = "Нажмите кнопку — ответит DupoLang";
+            label.Bounds = new System.Drawing.Rectangle(24, 24, 400, 24);
+            form.Items.Add(label);
+
+            var box = new DesignItem();
+            box.Kind = "TextBox";
+            box.Name = "textBox1";
+            box.Caption = "мир";
+            box.Bounds = new System.Drawing.Rectangle(24, 60, 220, 24);
+            form.Items.Add(box);
+
+            var button = new DesignItem();
+            button.Kind = "Button";
+            button.Name = "button1";
+            button.Caption = "Спросить DupoLang";
+            button.Bounds = new System.Drawing.Rectangle(24, 100, 200, 32);
+            button.Click = true;
+            form.Items.Add(button);
+
+            WinFormsCode.Write(form, false);
+            Save(dir, Path.Combine("src", "Program.cs"), WinFormsCode.Program(form));
+
+            // Переписываем код формы: обработчик зовёт блок def.
+            var cs = new StringBuilder();
+            cs.AppendLine("using System;");
+            cs.AppendLine("using System.Drawing;");
+            cs.AppendLine("using System.Windows.Forms;");
+            cs.AppendLine("using DupoLang;");
+            cs.AppendLine();
+            cs.AppendLine("namespace " + ns);
+            cs.AppendLine("{");
+            cs.AppendLine("    public partial class Form1 : Form");
+            cs.AppendLine("    {");
+            cs.AppendLine("        const string Logic = \"logic.dupolang\";");
+            cs.AppendLine();
+            cs.AppendLine("        public Form1()");
+            cs.AppendLine("        {");
+            cs.AppendLine("            InitializeComponent();");
+            cs.AppendLine("        }");
+            cs.AppendLine();
+            cs.AppendLine("        private void button1_Click(object sender, EventArgs e)");
+            cs.AppendLine("        {");
+            cs.AppendLine("            try");
+            cs.AppendLine("            {");
+            cs.AppendLine("                label1.Text = Dupo.Lang.TextFrom(Logic, \"Привет\", textBox1.Text);");
+            cs.AppendLine("            }");
+            cs.AppendLine("            catch (Exception ex)");
+            cs.AppendLine("            {");
+            cs.AppendLine("                label1.Text = \"Ошибка: \" + ex.Message;");
+            cs.AppendLine("            }");
+            cs.AppendLine("        }");
+            cs.AppendLine("    }");
+            cs.AppendLine("}");
+            Save(dir, Path.Combine("src", "Form1.cs"), cs.ToString());
+
+            Logic(dir, name);
+            Save(dir, "main.dupolang", DupoScript(name, "Forms", "приложение WinForms"));
         }
 
         static void CsLibrary(string dir, string name)

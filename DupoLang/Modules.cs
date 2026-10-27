@@ -15,7 +15,7 @@ namespace DupoLang
         {
             "Dupo.Web", "Dupo.App", "Dupo.Java", "Dupo.Tools", "Dupo.Resources",
             "Dupo.Services", "Dupo.CSharp", "Dupo.Cpp",
-            "Dupo.Data", "Dupo.Json", "Dupo.Text", "Dupo.Lang",
+            "Dupo.Data", "Dupo.Json", "Dupo.Text", "Dupo.Lang", "Dupo.Hosts",
             "Dupo.System.Files", "Dupo.System", "Dupo.IO", "Dupo.Sys"
         };
 
@@ -37,6 +37,7 @@ namespace DupoLang
                 case "Dupo.Json": return JsonNs(interp);
                 case "Dupo.Text": return TextNs(interp);
                 case "Dupo.Lang": return LangNs(interp);
+                case "Dupo.Hosts": return HostsNs(interp);
                 case "Dupo.System.Files": return Files(interp);
                 case "Dupo.System": return SystemNs(interp);
             }
@@ -54,6 +55,7 @@ namespace DupoLang
             var ns = new NativeNamespace("Web");
             ns.Members["Server"] = new NativeType("Server", typeof(DupoWebServer));
             ns.Members["Php"] = PhpTools.Instance;
+            ns.Members["Hosts"] = HostsNs(interp);
 
             ns.Members["Open"] = new Builtin("Open", delegate (object[] a) {
                 string url = Val.Str(A(a, 0));
@@ -64,17 +66,20 @@ namespace DupoLang
 
             ns.Members["Get"] = new Builtin("Get", delegate (object[] a) {
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                DupoHosts.Log = interp.Print;
                 using (var wc = new WebClient())
                 {
                     wc.Encoding = System.Text.Encoding.UTF8;
-                    return wc.DownloadString(Val.Str(A(a, 0)));
+                    return wc.DownloadString(DupoHosts.Prepare(wc, Val.Str(A(a, 0))));
                 }
             });
 
             ns.Members["Download"] = new Builtin("Download", delegate (object[] a) {
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                 string file = DupoRuntime.Resolve(Val.Str(A(a, 1)));
-                using (var wc = new WebClient()) wc.DownloadFile(Val.Str(A(a, 0)), file);
+                DupoHosts.Log = interp.Print;
+                using (var wc = new WebClient())
+                    wc.DownloadFile(DupoHosts.Prepare(wc, Val.Str(A(a, 0))), file);
                 interp.Print("Скачано: " + file);
                 return file;
             });
@@ -196,6 +201,16 @@ namespace DupoLang
             var ns = new NativeNamespace("Cpp");
             ns.Target = CppTools.Instance;
             ns.Backing = typeof(CppTools);
+            return ns;
+        }
+
+        // ---------------- Dupo.Hosts ----------------
+        static NativeNamespace HostsNs(Interp interp)
+        {
+            DupoHosts.Log = interp.Print;
+
+            var ns = new NativeNamespace("Hosts");
+            ns.Backing = typeof(DupoHosts);
             return ns;
         }
 

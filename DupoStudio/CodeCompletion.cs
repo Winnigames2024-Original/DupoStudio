@@ -25,7 +25,7 @@ namespace DupoStudio
         static readonly Dictionary<string, string[]> Members =
             new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
         {
-            { "Web", new[] { "Server", "Open", "Get", "Download" } },
+            { "Web", new[] { "Server", "Open", "Get", "Download", "Hosts" } },
             { "Files", new[] {
                 "Create", "Write", "Append", "AppendLine", "Read", "ReadLines", "ReplaceIn",
                 "Contains", "Exists", "Delete", "Copy", "Move", "Rename", "Size", "Modified",
@@ -62,6 +62,10 @@ namespace DupoStudio
                 "Format", "Fill", "Match", "Find", "ReplaceAll",
                 "ToNumber", "Round", "ToBase64", "FromBase64", "UrlEncode", "UrlDecode" } },
             { "Json", new[] { "Parse", "Read", "Text", "Pretty", "Save" } },
+            { "Hosts", new[] {
+                "FilePath", "TempDir", "DataDir", "Exists", "Count", "Source",
+                "Create", "Reload", "Resolve", "Knows", "List", "Rewrite",
+                "Add", "Remove", "Open", "Text" } },
             { "Lang", new[] {
                 "ExecuteFrom", "Functions", "HasFunction", "Arity",
                 "RunFile", "RunCode", "Check", "Reset", "Version" } },
@@ -87,7 +91,7 @@ namespace DupoStudio
             "print", "println", "str", "num", "int", "round", "abs", "type", "len",
             "wait", "now", "random", "list", "push", "upper", "lower", "split",
             "Web", "Files", "Java", "Tools", "App", "IO", "Sys", "Resources", "Services",
-            "CSharp", "Cpp", "Text", "Json", "Data", "Lang", "def",
+            "CSharp", "Cpp", "Text", "Json", "Data", "Lang", "Hosts", "def",
             "map", "keys", "values", "has"
         };
 
@@ -153,12 +157,58 @@ namespace DupoStudio
                 return;
             }
 
-            if (!list.Visible) return;
+            if (list.Visible)
+            {
+                if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Right ||
+                    e.KeyCode == Keys.Home || e.KeyCode == Keys.End) { Hide(); return; }
 
-            if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Right ||
-                e.KeyCode == Keys.Home || e.KeyCode == Keys.End) { Hide(); return; }
+                Filter();
+                return;
+            }
 
-            Filter();
+            // Подсказки сами появляются по ходу набора — как в больших средах.
+            if (!Auto) return;
+            if (e.Control || e.Alt) return;
+
+            bool letter = (e.KeyCode >= Keys.A && e.KeyCode <= Keys.Z) ||
+                          (e.KeyCode >= Keys.D0 && e.KeyCode <= Keys.D9) ||
+                          e.KeyCode == Keys.Oem3 || e.KeyCode == Keys.OemQuestion ||
+                          e.KeyCode == Keys.OemMinus || (int)e.KeyCode >= 186;
+
+            if (!letter) return;
+
+            string word = CurrentWord();
+            if (word.Length < 2) return;
+            if (InText()) return;
+
+            var names = Candidates();
+            if (names.Count == 0 || (names.Count == 1 && names[0] == word)) return;
+
+            Show(WordStart(), names);
+        }
+
+        /// <summary>Подсказывать ли по ходу набора.</summary>
+        public bool Auto = true;
+
+        /// <summary>Курсор внутри строки или комментария — там подсказки не нужны.</summary>
+        bool InText()
+        {
+            try
+            {
+                int caret = editor.SelectionStart;
+                int line = editor.GetLineFromCharIndex(caret);
+                int from = editor.GetFirstCharIndexFromLine(line);
+                if (from < 0 || caret < from) return false;
+
+                string before = editor.Text.Substring(from, caret - from);
+
+                if (before.Contains("//") || before.TrimStart().StartsWith("#")) return true;
+
+                int quotes = 0;
+                foreach (char c in before) if (c == '"') quotes++;
+                return quotes % 2 == 1;
+            }
+            catch { return false; }
         }
 
         void ListKey(object sender, KeyEventArgs e)

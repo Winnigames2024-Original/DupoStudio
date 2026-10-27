@@ -8,7 +8,7 @@
     <AssemblyName>uninstall</AssemblyName>
     <RootNamespace>DupoUninstall</RootNamespace>
     <CodePage>65001</CodePage>
-    <Version>0.0.3</Version>
+    <Version>0.0.4</Version>
     <Product>Dupo Studio</Product>
     <Company>Winnigames2024</Company>
     <Authors>Winnigames2024</Authors>

@@ -123,6 +123,11 @@ namespace DupoLang
             foreach (string r in (refs ?? "").Split(';', ',', ' '))
                 if (r.Trim().Length > 0 && !all.Contains(r.Trim())) all.Add(r.Trim());
 
+            // Библиотеки из свойств проекта подключаются сами — их список
+            // студия пишет в project.dupo строкой references=.
+            foreach (string r in FromProject())
+                if (!all.Contains(r)) all.Add(r);
+
             // Если код зовёт Dupo.Lang.ExecuteFrom, сам подставляем DupoLang.dll
             // и кладём её рядом с результатом, иначе приложение не запустится.
             string lib = NeedsDupoLang(sources) ? DupoRuntime.Library : "";
@@ -148,6 +153,40 @@ namespace DupoLang
 
             Log("Готово: " + target + "  (" + new FileInfo(target).Length / 1024 + " КБ)");
             return target;
+        }
+
+        /// <summary>Библиотеки, записанные в project.dupo открытого проекта.</summary>
+        public static List<string> FromProject()
+        {
+            var res = new List<string>();
+
+            try
+            {
+                string file = Path.Combine(DupoRuntime.ProjectDir, "project.dupo");
+                if (!File.Exists(file)) return res;
+
+                foreach (string raw in File.ReadAllLines(file, Encoding.UTF8))
+                {
+                    string line = raw.Trim();
+                    if (!line.StartsWith("references=", StringComparison.OrdinalIgnoreCase)) continue;
+
+                    foreach (string r in line.Substring("references=".Length).Split(';', ','))
+                    {
+                        string name = r.Trim();
+                        if (name.Length == 0 || res.Contains(name)) continue;
+
+                        // Путь к своей dll приводим к полному — компилятор
+                        // запускается из папки сборки.
+                        res.Add(name.IndexOf(Path.DirectorySeparatorChar) >= 0 || name.IndexOf('/') >= 0
+                            ? DupoRuntime.Resolve(name)
+                            : name);
+                    }
+                    break;
+                }
+            }
+            catch { }
+
+            return res;
         }
 
         /// <summary>Нужна ли ссылка на DupoLang.dll — смотрим, что в исходниках.</summary>
