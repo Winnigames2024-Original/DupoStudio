@@ -3,27 +3,29 @@ using System.Windows.Forms;
 
 namespace DupoStudio
 {
-    partial class MainForm
+    partial class ProjectEditorForm
     {
         System.ComponentModel.IContainer components = null;
 
         MenuStrip menuMain;
-        ToolStripMenuItem miFile, miNewProject, miOpenProject, miSave, miSaveAll, miExit;
-        ToolStripMenuItem miExport, miImport;
+        ToolStripMenuItem miFile, miNewProject, miNewJava, miOpenProject, miSave, miSaveAll;
+        ToolStripMenuItem miExport, miImport, miAutostart, miClose, miExit;
         ToolStripMenuItem miRun, miStart, miStop, miBuild, miBuildExe;
-        ToolStripMenuItem miTools, miPhpInstall, miPhpInfo, miPhpRemove, miBrowser, miFolder;
-        ToolStripMenuItem miJdkInstall, miJdkInfo, miJdkRemove, miNewJava;
+        ToolStripMenuItem miTools, miPhpInstall, miPhpInfo, miPhpRemove;
+        ToolStripMenuItem miJdkInstall, miJdkInfo, miJdkRemove, miBrowser, miFolder;
         ToolStripMenuItem miHelp, miAbout;
 
         ToolStrip toolMain;
         ToolStripButton tbNew, tbOpen, tbSave, tbRun, tbStop, tbPhp, tbBrowser, tbExport;
 
         SplitContainer splitMain, splitRight;
-        TreeView treeProject;
-        TabControl tabsEditor;
-        RichTextBox txtOutput;
         StatusStrip statusMain;
         ToolStripStatusLabel lblStatus, lblCaret, lblProject, lblPhp, lblJava;
+
+        // Три встроенных окна: дерево слева, редактор в центре, вывод снизу.
+        ExplorerForm explorer;
+        CodeEditorForm editors;
+        ConsoleForm console;
 
         protected override void Dispose(bool disposing)
         {
@@ -44,13 +46,15 @@ namespace DupoStudio
             miSaveAll = new ToolStripMenuItem("Сохранить всё");
             miExport = new ToolStripMenuItem("Экспорт в .dapp...");
             miImport = new ToolStripMenuItem("Импорт .dapp...");
+            miAutostart = new ToolStripMenuItem("Открывать этот проект при запуске");
+            miClose = new ToolStripMenuItem("Закрыть проект");
             miExit = new ToolStripMenuItem("Выход");
 
             miRun = new ToolStripMenuItem("Запуск");
             miStart = new ToolStripMenuItem("Запустить");
             miStop = new ToolStripMenuItem("Остановить");
-            miBuild = new ToolStripMenuItem("Собрать папку с файлами");
             miBuildExe = new ToolStripMenuItem("Собрать в один .exe");
+            miBuild = new ToolStripMenuItem("Собрать папку с файлами");
 
             miTools = new ToolStripMenuItem("Инструменты");
             miPhpInstall = new ToolStripMenuItem("Установить PHP");
@@ -77,15 +81,17 @@ namespace DupoStudio
 
             splitMain = new SplitContainer();
             splitRight = new SplitContainer();
-            treeProject = new TreeView();
-            tabsEditor = new TabControl();
-            txtOutput = new RichTextBox();
+
+            explorer = new ExplorerForm();
+            editors = new CodeEditorForm();
+            console = new ConsoleForm();
+
             statusMain = new StatusStrip();
-            lblStatus = new ToolStripStatusLabel("Готово");
-            lblCaret = new ToolStripStatusLabel("1 : 1");
             lblProject = new ToolStripStatusLabel("  нет проекта  ");
+            lblStatus = new ToolStripStatusLabel("Готово");
             lblPhp = new ToolStripStatusLabel("PHP не установлен");
             lblJava = new ToolStripStatusLabel("JDK не установлен");
+            lblCaret = new ToolStripStatusLabel("1 : 1");
 
             ((System.ComponentModel.ISupportInitialize)splitMain).BeginInit();
             ((System.ComponentModel.ISupportInitialize)splitRight).BeginInit();
@@ -97,15 +103,19 @@ namespace DupoStudio
 
             // --- меню ---
             miFile.DropDownItems.AddRange(new ToolStripItem[] {
-                miNewProject, miNewJava, miOpenProject, new ToolStripSeparator(), miSave, miSaveAll,
-                new ToolStripSeparator(), miExport, miImport,
-                new ToolStripSeparator(), miExit });
+                miNewProject, miNewJava, miOpenProject, new ToolStripSeparator(),
+                miSave, miSaveAll, new ToolStripSeparator(),
+                miExport, miImport, new ToolStripSeparator(),
+                miAutostart, miClose, new ToolStripSeparator(), miExit });
+
             miRun.DropDownItems.AddRange(new ToolStripItem[] {
                 miStart, miStop, new ToolStripSeparator(), miBuildExe, miBuild });
+
             miTools.DropDownItems.AddRange(new ToolStripItem[] {
                 miPhpInstall, miPhpInfo, miPhpRemove, new ToolStripSeparator(),
                 miJdkInstall, miJdkInfo, miJdkRemove, new ToolStripSeparator(),
                 miBrowser, miFolder });
+
             miHelp.DropDownItems.Add(miAbout);
 
             miNewProject.ShortcutKeys = Keys.Control | Keys.N;
@@ -113,22 +123,21 @@ namespace DupoStudio
             miOpenProject.ShortcutKeys = Keys.Control | Keys.O;
             miSave.ShortcutKeys = Keys.Control | Keys.S;
             miSaveAll.ShortcutKeys = Keys.Control | Keys.Shift | Keys.S;
+            miExport.ShortcutKeys = Keys.Control | Keys.E;
             miStart.ShortcutKeys = Keys.F5;
             miStop.ShortcutKeys = Keys.Shift | Keys.F5;
-            miExport.ShortcutKeys = Keys.Control | Keys.E;
             miBuildExe.ShortcutKeys = Keys.Control | Keys.B;
+            miClose.ShortcutKeys = Keys.Control | Keys.W;
+
+            miAutostart.CheckOnClick = true;
 
             menuMain.Items.AddRange(new ToolStripItem[] { miFile, miRun, miTools, miHelp });
-
-            // Верхние пункты наследуют цвет от строки меню, а выпадающие — нет:
-            // у них свой владелец с системным чёрным текстом, и на тёмном фоне
-            // их попросту не видно. Красим всё дерево вручную.
-            PaintMenuItems(menuMain.Items);
             menuMain.BackColor = Theme.Chrome;
             menuMain.ForeColor = Theme.Text;
             menuMain.Padding = new Padding(6, 2, 0, 2);
             menuMain.Font = new Font("Segoe UI", 9f);
             menuMain.Renderer = new ToolStripProfessionalRenderer(new DarkColors());
+            Theme.PaintMenu(menuMain.Items);
 
             // --- панель инструментов ---
             toolMain.Items.AddRange(new ToolStripItem[] {
@@ -139,8 +148,8 @@ namespace DupoStudio
             toolMain.GripStyle = ToolStripGripStyle.Hidden;
             toolMain.Padding = new Padding(8, 5, 8, 5);
             toolMain.Font = new Font("Segoe UI", 9f);
-            toolMain.ImageScalingSize = new Size(16, 16);
             toolMain.Renderer = new ToolStripProfessionalRenderer(new DarkColors());
+
             foreach (ToolStripItem it in toolMain.Items)
             {
                 it.ForeColor = Theme.Text;
@@ -152,53 +161,26 @@ namespace DupoStudio
             tbStop.ForeColor = Theme.Err;
             tbExport.ForeColor = Theme.Accent2;
 
-            // --- дерево проекта ---
-            treeProject.Dock = DockStyle.Fill;
-            treeProject.BackColor = Theme.Panel;
-            treeProject.ForeColor = Theme.Text;
-            treeProject.BorderStyle = BorderStyle.None;
-            treeProject.HideSelection = false;
-            treeProject.Font = new Font("Segoe UI", 9.5f);
-            treeProject.ItemHeight = 24;
-            treeProject.Indent = 18;
-            treeProject.ShowLines = false;
-            treeProject.ShowPlusMinus = true;
-            treeProject.FullRowSelect = true;
-
-            // --- редактор ---
-            tabsEditor.Dock = DockStyle.Fill;
-            tabsEditor.DrawMode = TabDrawMode.OwnerDrawFixed;
-            tabsEditor.SizeMode = TabSizeMode.Normal;
-            tabsEditor.ItemSize = new Size(170, 26);
-            tabsEditor.Padding = new Point(10, 4);
-            tabsEditor.BackColor = Theme.Back;
-
-            // --- вывод ---
-            txtOutput.Dock = DockStyle.Fill;
-            txtOutput.BackColor = Color.FromArgb(24, 24, 24);
-            txtOutput.ForeColor = Theme.Text;
-            txtOutput.BorderStyle = BorderStyle.None;
-            txtOutput.Font = new Font("Consolas", 10f);
-            txtOutput.Padding = new Padding(8);
-            txtOutput.ReadOnly = true;
-            txtOutput.DetectUrls = false;
-
-            // --- разделители ---
+            // --- встроенные окна ---
             splitRight.Dock = DockStyle.Fill;
             splitRight.Orientation = Orientation.Horizontal;
             splitRight.BackColor = Theme.Chrome;
             splitRight.SplitterWidth = 5;
-            splitRight.Panel1.Controls.Add(tabsEditor);
-            splitRight.Panel2.Controls.Add(txtOutput);
+            splitRight.Panel1.Controls.Add(editors);
+            splitRight.Panel2.Controls.Add(console);
 
             splitMain.Dock = DockStyle.Fill;
             splitMain.Orientation = Orientation.Vertical;
             splitMain.BackColor = Theme.Chrome;
             splitMain.SplitterWidth = 5;
-            splitMain.Panel1.Controls.Add(treeProject);
+            splitMain.Panel1.Controls.Add(explorer);
             splitMain.Panel2.Controls.Add(splitRight);
 
-            // --- статус ---
+            explorer.Show();
+            editors.Show();
+            console.Show();
+
+            // --- строка состояния ---
             statusMain.BackColor = Theme.Status;
             statusMain.ForeColor = Color.White;
             statusMain.SizingGrip = false;
@@ -214,18 +196,19 @@ namespace DupoStudio
             lblStatus.ForeColor = Color.FromArgb(205, 220, 245);
 
             lblPhp.Margin = new Padding(0, 0, 18, 0);
+            lblJava.Margin = new Padding(0, 0, 18, 0);
             lblCaret.ForeColor = Color.FromArgb(205, 220, 245);
 
-            lblJava.Margin = new Padding(0, 0, 18, 0);
-            statusMain.Items.AddRange(new ToolStripItem[] { lblProject, lblStatus, lblPhp, lblJava, lblCaret });
+            statusMain.Items.AddRange(new ToolStripItem[] {
+                lblProject, lblStatus, lblPhp, lblJava, lblCaret });
 
-            // --- форма ---
+            // --- окно ---
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1240, 780);
             MinimumSize = new Size(900, 560);
             BackColor = Theme.Back;
             ForeColor = Theme.Text;
-            Text = "Dupo Studio — App Maker";
+            Text = "Dupo Studio";
             StartPosition = FormStartPosition.CenterScreen;
 
             Controls.Add(splitMain);
@@ -245,49 +228,5 @@ namespace DupoStudio
             ResumeLayout(false);
             PerformLayout();
         }
-    }
-
-    partial class MainForm
-    {
-        /// <summary>Задаёт светлый текст всем пунктам меню, включая выпадающие.</summary>
-        static void PaintMenuItems(ToolStripItemCollection items)
-        {
-            foreach (ToolStripItem item in items)
-            {
-                if (item is ToolStripSeparator) continue;
-
-                item.ForeColor = Theme.Text;
-
-                var menu = item as ToolStripMenuItem;
-                if (menu == null) continue;
-
-                menu.DropDown.BackColor = Theme.Chrome;
-                menu.DropDown.ForeColor = Theme.Text;
-                menu.DropDown.Renderer = new ToolStripProfessionalRenderer(new DarkColors());
-
-                PaintMenuItems(menu.DropDownItems);
-            }
-        }
-    }
-
-    /// <summary>Тёмная раскраска для меню и тулбара.</summary>
-    public class DarkColors : ProfessionalColorTable
-    {
-        public override Color MenuItemSelected { get { return Theme.Accent; } }
-        public override Color MenuItemSelectedGradientBegin { get { return Theme.Accent; } }
-        public override Color MenuItemSelectedGradientEnd { get { return Theme.Accent; } }
-        public override Color MenuItemBorder { get { return Theme.Accent; } }
-        public override Color MenuBorder { get { return Theme.Border; } }
-        public override Color ToolStripDropDownBackground { get { return Theme.Chrome; } }
-        public override Color ImageMarginGradientBegin { get { return Theme.Chrome; } }
-        public override Color ImageMarginGradientMiddle { get { return Theme.Chrome; } }
-        public override Color ImageMarginGradientEnd { get { return Theme.Chrome; } }
-        public override Color ToolStripGradientBegin { get { return Theme.Chrome; } }
-        public override Color ToolStripGradientMiddle { get { return Theme.Chrome; } }
-        public override Color ToolStripGradientEnd { get { return Theme.Chrome; } }
-        public override Color ButtonSelectedHighlight { get { return Theme.Border; } }
-        public override Color ButtonPressedHighlight { get { return Theme.Accent; } }
-        public override Color SeparatorDark { get { return Theme.Border; } }
-        public override Color SeparatorLight { get { return Theme.Border; } }
     }
 }

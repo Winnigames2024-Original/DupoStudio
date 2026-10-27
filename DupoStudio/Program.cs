@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 
@@ -21,7 +22,26 @@ namespace DupoStudio
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm(args));
+
+            Settings.Load();
+
+            // Папка в командной строке важнее настроек.
+            string project = args != null && args.Length > 0 && Directory.Exists(args[0])
+                ? args[0]
+                : Settings.AutostartProject;
+
+            if (project == null)
+            {
+                // Автозапуска нет — показываем стартовое окно.
+                Application.Run(new MainForm());
+                return;
+            }
+
+            var editor = new ProjectEditorForm(project);
+            Application.Run(editor);
+
+            // «Закрыть проект» из окна редактора возвращает в стартовое окно.
+            if (editor.BackToLauncher) Application.Run(new MainForm());
         }
     }
 }

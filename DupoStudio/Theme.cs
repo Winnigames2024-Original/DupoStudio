@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Windows.Forms;
 
 namespace DupoStudio
 {
@@ -23,9 +24,55 @@ namespace DupoStudio
         public static readonly Color Number = Color.FromArgb(181, 206, 168);
         public static readonly Color Comment = Color.FromArgb(106, 153, 85);
 
+        /// <summary>
+        /// Задаёт светлый текст всем пунктам меню, включая выпадающие.
+        /// Верхние пункты наследуют цвет от строки меню, а выпадающие — нет:
+        /// у них свой владелец с системным чёрным текстом, и на тёмном фоне
+        /// их попросту не видно.
+        /// </summary>
+        public static void PaintMenu(ToolStripItemCollection items)
+        {
+            foreach (ToolStripItem item in items)
+            {
+                if (item is ToolStripSeparator) continue;
+
+                item.ForeColor = Text;
+
+                var menu = item as ToolStripMenuItem;
+                if (menu == null) continue;
+
+                menu.DropDown.BackColor = Chrome;
+                menu.DropDown.ForeColor = Text;
+                menu.DropDown.Renderer = new ToolStripProfessionalRenderer(new DarkColors());
+
+                PaintMenu(menu.DropDownItems);
+            }
+        }
+
         public static readonly Color Ok = Color.FromArgb(106, 190, 120);
         public static readonly Color Warn = Color.FromArgb(220, 180, 100);
         public static readonly Color Err = Color.FromArgb(230, 110, 110);
         public static readonly Color Info = Color.FromArgb(120, 170, 220);
+    }
+
+    /// <summary>Тёмная раскраска для меню и панели инструментов.</summary>
+    public class DarkColors : ProfessionalColorTable
+    {
+        public override Color MenuItemSelected { get { return Theme.Accent; } }
+        public override Color MenuItemSelectedGradientBegin { get { return Theme.Accent; } }
+        public override Color MenuItemSelectedGradientEnd { get { return Theme.Accent; } }
+        public override Color MenuItemBorder { get { return Theme.Accent; } }
+        public override Color MenuBorder { get { return Theme.Border; } }
+        public override Color ToolStripDropDownBackground { get { return Theme.Chrome; } }
+        public override Color ImageMarginGradientBegin { get { return Theme.Chrome; } }
+        public override Color ImageMarginGradientMiddle { get { return Theme.Chrome; } }
+        public override Color ImageMarginGradientEnd { get { return Theme.Chrome; } }
+        public override Color ToolStripGradientBegin { get { return Theme.Chrome; } }
+        public override Color ToolStripGradientMiddle { get { return Theme.Chrome; } }
+        public override Color ToolStripGradientEnd { get { return Theme.Chrome; } }
+        public override Color ButtonSelectedHighlight { get { return Theme.Border; } }
+        public override Color ButtonPressedHighlight { get { return Theme.Accent; } }
+        public override Color SeparatorDark { get { return Theme.Border; } }
+        public override Color SeparatorLight { get { return Theme.Border; } }
     }
 }

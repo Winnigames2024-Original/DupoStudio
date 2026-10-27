@@ -1,0 +1,634 @@
+﻿using System;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Windows.Forms;
+using DupoLang;
+
+namespace DupoStudio
+{
+    /// <summary>
+    /// Окно проекта: меню, панель инструментов и три встроенных окна —
+    /// ExplorerForm слева, CodeEditorForm в центре, ConsoleForm снизу.
+    /// </summary>
+    public partial class ProjectEditorForm : Form
+    {
+        string projectDir;
+        Thread runThread;
+        Interp interp;
+        bool running;
+
+        /// <summary>Пользователь закрыл проект — надо вернуться в стартовое окно.</summary>
+        public bool BackToLauncher { get; private set; }
+
+        static readonly string[] SkipDirs = { "build", "bin", "obj", ".git", ".vs", "runtime", "node_modules" };
+
+        public ProjectEditorForm(string projectPath)
+        {
+            InitializeComponent();
+            try { Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
+            WireUp();
+
+            Load += delegate
+            {
+                try { splitMain.SplitterDistance = 260; } catch { }
+                try { splitRight.SplitterDistance = Math.Max(120, splitRight.Height - 230); } catch { }
+
+                Banner();
+
+                if (!string.IsNullOrEmpty(projectPath) && Directory.Exists(projectPath))
+                    OpenProject(projectPath);
+                else
+                    Status("Проект не найден: " + projectPath);
+            };
+        }
+
+        void WireUp()
+        {
+            miNewProject.Click += delegate { NewProject(); };
+            miNewJava.Click += delegate { NewJavaProject(); };
+            miOpenProject.Click += delegate { OpenProjectDialog(); };
+            miSave.Click += delegate { SaveActive(); };
+            miSaveAll.Click += delegate { SaveAll(); };
+            miExport.Click += delegate { ExportDapp(); };
+            miImport.Click += delegate { ImportDapp(); };
+            miAutostart.Click += delegate { ToggleAutostart(); };
+            miClose.Click += delegate { CloseProject(); };
+            miExit.Click += delegate { Close(); };
+
+            miStart.Click += delegate { RunScript(); };
+            miStop.Click += delegate { StopScript(); };
+            miBuild.Click += delegate { BuildApp(); };
+            miBuildExe.Click += delegate { BuildSingleExe(); };
+
+            miPhpInstall.Click += delegate { InstallPhp(); };
+            miPhpInfo.Click += delegate { Log("PHP: " + PhpTools.Instance.Version, Theme.Info); };
+            miPhpRemove.Click += delegate { RemovePhp(); };
+            miJdkInstall.Click += delegate { InstallJdk(); };
+            miJdkInfo.Click += delegate { Log("Java: " + JavaTools.Instance.Version, Theme.Info); };
+            miJdkRemove.Click += delegate { RemoveJdk(); };
+            miBrowser.Click += delegate { OpenBrowser(); };
+            miFolder.Click += delegate { if (projectDir != null) Process.Start(projectDir); };
+            miAbout.Click += delegate { About(); };
+
+            tbNew.Click += delegate { NewProject(); };
+            tbOpen.Click += delegate { OpenProjectDialog(); };
+            tbSave.Click += delegate { SaveActive(); };
+            tbRun.Click += delegate { RunScript(); };
+            tbStop.Click += delegate { StopScript(); };
+            tbPhp.Click += delegate { InstallPhp(); };
+            tbBrowser.Click += delegate { OpenBrowser(); };
+            tbExport.Click += delegate { ExportDapp(); };
+
+            explorer.FileActivated += delegate (object s, string path) { OpenFile(path); };
+            editors.CaretMoved += delegate { UpdateCaret(); };
+
+            FormClosing += OnClosing;
+            UpdateRunState();
+        }
+
+        // ---------------- автозапуск ----------------
+
+        bool IsAutostart
+        {
+            get
+            {
+                return projectDir != null &&
+                       string.Equals(Settings.Autostart, projectDir, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        void ToggleAutostart()
+        {
+            if (projectDir == null) return;
+
+            Settings.Autostart = miAutostart.Checked ? projectDir : "";
+            Settings.Save();
+
+            Log(miAutostart.Checked
+                ? "Этот проект будет открываться сразу при запуске."
+                : "Автозапуск выключен — при запуске откроется стартовое окно.", Theme.Dim);
+        }
+
+        /// <summary>При закрытии проекта спрашиваем, открывать ли его сразу при следующем запуске.</summary>
+        void AskAutostart()
+        {
+            if (projectDir == null || Settings.DontAsk || IsAutostart) return;
+
+            using (var dlg = new AutostartDialog(Path.GetFileName(projectDir)))
+            {
+                DialogResult r = dlg.ShowDialog(this);
+
+                if (dlg.DontAskAgain) Settings.DontAsk = true;
+                if (r == DialogResult.Yes) Settings.Autostart = projectDir;
+
+                Settings.Save();
+            }
+        }
+
+        void CloseProject()
+        {
+            BackToLauncher = true;
+            Close();
+        }
+
+        // ---------------- проект ----------------
+
+        void NewProject()
+        {
+            string dir = ProjectTemplates.CreateWeb(this);
+            if (dir == null) return;
+
+            OpenProject(dir);
+            OpenFile(Path.Combine(dir, "main.dupolang"));
+            Log("Проект создан: " + dir, Theme.Ok);
+        }
+
+        void NewJavaProject()
+        {
+            string dir = ProjectTemplates.CreateJava(this);
+            if (dir == null) return;
+
+            OpenProject(dir);
+            OpenFile(Path.Combine(dir, "main.dupolang"));
+            Log("Java-проект создан: " + dir, Theme.Ok);
+
+            if (!JavaTools.Instance.IsInstalled)
+                Log("JDK ещё не установлен — F5 поставит его сам, либо Инструменты → Установить JDK.", Theme.Dim);
+        }
+
+        void OpenProjectDialog()
+        {
+            string dir = ProjectTemplates.Choose(this, projectDir);
+            if (dir != null) OpenProject(dir);
+        }
+
+        void OpenProject(string dir)
+        {
+            projectDir = dir;
+            DupoRuntime.ProjectDir = dir;
+            Text = "Dupo Studio — " + Path.GetFileName(dir);
+            lblProject.Text = "  " + Path.GetFileName(dir) + "  ";
+            RefreshTree();
+            miAutostart.Checked = IsAutostart;
+            Status(dir);
+
+            string main = Path.Combine(dir, "main.dupolang");
+            if (File.Exists(main)) OpenFile(main);
+        }
+
+        void RefreshTree()
+        {
+            explorer.LoadProject(projectDir);
+        }
+
+        // ---------------- файлы ----------------
+
+        CodeEditor ActiveEditor { get { return editors.Active; } }
+
+        void OpenFile(string path)
+        {
+            try
+            {
+                editors.Open(path);
+                Status(path);
+            }
+            catch (Exception ex) { Log("Не открылось: " + ex.Message, Theme.Err); }
+        }
+
+        void SaveActive()
+        {
+            var ed = ActiveEditor;
+            if (ed == null || ed.FilePath == null) return;
+
+            editors.SaveActive();
+            Status("Сохранено: " + ed.FilePath);
+        }
+
+        void SaveAll()
+        {
+            editors.SaveAll();
+            Status("Все файлы сохранены");
+        }
+
+        // ---------------- запуск ----------------
+
+        void RunScript()
+        {
+            if (running) { Log("Уже запущено — сначала «Стоп».", Theme.Err); return; }
+
+            SaveAll();
+
+            string script = null;
+            var ed = ActiveEditor;
+            if (ed != null && ed.FilePath != null && ed.FilePath.EndsWith(".dupolang", StringComparison.OrdinalIgnoreCase))
+                script = ed.FilePath;
+
+            if (script == null && projectDir != null)
+            {
+                string main = Path.Combine(projectDir, "main.dupolang");
+                if (File.Exists(main)) script = main;
+            }
+
+            if (script == null) { Log("Не нашёл файл .dupolang для запуска.", Theme.Err); return; }
+
+            console.Clear();
+            Log("▶  " + Path.GetFileName(script), Theme.Info);
+            Log(new string('-', 60), Theme.Dim);
+
+            running = true;
+            UpdateRunState();
+
+            string path = script;
+            runThread = new Thread(delegate ()
+            {
+                try
+                {
+                    interp = Dupo.RunFile(path, delegate (string s) { Log(s, Theme.Text); });
+                    if (interp.HasLiveResources)
+                        Log("Скрипт отработал. Сервер продолжает работать — «Стоп» остановит.", Theme.Ok);
+                    else
+                    {
+                        Log("Готово.", Theme.Ok);
+                        BeginInvoke(new Action(FinishRun));
+                    }
+                }
+                catch (DupoError de)
+                {
+                    Log("✖  " + de, Theme.Err);
+                    BeginInvoke(new Action(FinishRun));
+                }
+                catch (ThreadAbortException) { }
+                catch (Exception ex)
+                {
+                    Log("✖  " + ex.Message, Theme.Err);
+                    BeginInvoke(new Action(FinishRun));
+                }
+            });
+            runThread.IsBackground = true;
+            runThread.SetApartmentState(ApartmentState.STA);
+            runThread.Start();
+        }
+
+        void StopScript()
+        {
+            if (interp != null) { interp.Shutdown(); interp = null; }
+            if (runThread != null && runThread.IsAlive)
+            {
+                try { runThread.Abort(); } catch { }
+            }
+            runThread = null;
+            FinishRun();
+            Log("■  Остановлено.", Theme.Info);
+        }
+
+        void FinishRun()
+        {
+            running = false;
+            UpdateRunState();
+        }
+
+        void UpdateRunState()
+        {
+            tbRun.Enabled = miStart.Enabled = !running;
+            tbStop.Enabled = miStop.Enabled = running;
+            Status(running ? "Выполняется..." : "Готово");
+        }
+
+        // ---------------- PHP ----------------
+
+        void InstallPhp()
+        {
+            PhpTools.Log = delegate (string s) { Log(s, Theme.Text); };
+
+            if (PhpTools.Instance.IsInstalled)
+            {
+                Log("PHP уже установлен: " + PhpTools.Dir, Theme.Ok);
+                Log(PhpTools.Instance.Version, Theme.Dim);
+                return;
+            }
+
+            Log("Устанавливаю PHP...", Theme.Info);
+            tbPhp.Enabled = false;
+
+            var t = new Thread(delegate ()
+            {
+                try
+                {
+                    PhpTools.Instance.Install();
+                    Log("PHP: " + PhpTools.Instance.Version, Theme.Ok);
+                    BeginInvoke(new Action(UpdatePhpStatus));
+                }
+                catch (Exception ex) { Log("✖  PHP не поставился: " + ex.Message, Theme.Err); }
+                finally { BeginInvoke(new Action(delegate { tbPhp.Enabled = true; })); }
+            });
+            t.IsBackground = true;
+            t.Start();
+        }
+
+        void InstallJdk()
+        {
+            JavaTools.Log = delegate (string s) { Log(s, Theme.Text); };
+
+            if (JavaTools.Instance.IsInstalled)
+            {
+                Log("JDK уже установлен: " + JavaTools.Home, Theme.Ok);
+                Log(JavaTools.Instance.Version, Theme.Dim);
+                return;
+            }
+
+            Log("Ставлю JDK — скачивание около 190 МБ, это займёт несколько минут.", Theme.Info);
+            miJdkInstall.Enabled = false;
+
+            var t = new Thread(delegate ()
+            {
+                try
+                {
+                    JavaTools.Instance.Install();
+                    BeginInvoke(new Action(UpdateJavaStatus));
+                }
+                catch (Exception ex) { Log("✖  JDK не поставился: " + ex.Message, Theme.Err); }
+                finally { BeginInvoke(new Action(delegate { miJdkInstall.Enabled = true; })); }
+            });
+            t.IsBackground = true;
+            t.Start();
+        }
+
+        void RemoveJdk()
+        {
+            JavaTools.Log = delegate (string s) { Log(s, Theme.Text); };
+            if (MessageBox.Show(this, "Удалить установленный JDK?", "Dupo Studio",
+                                MessageBoxButtons.YesNo) != DialogResult.Yes) return;
+            try { JavaTools.Instance.Uninstall(); UpdateJavaStatus(); }
+            catch (Exception ex) { Log(ex.Message, Theme.Err); }
+        }
+
+        void RemovePhp()
+        {
+            PhpTools.Log = delegate (string s) { Log(s, Theme.Text); };
+            if (MessageBox.Show(this, "Удалить установленный PHP?", "Dupo Studio",
+                                MessageBoxButtons.YesNo) != DialogResult.Yes) return;
+            try { PhpTools.Instance.Uninstall(); UpdatePhpStatus(); }
+            catch (Exception ex) { Log(ex.Message, Theme.Err); }
+        }
+
+        void OpenBrowser()
+        {
+            string url = "http://localhost:" + DupoWebServer.LastPort + "/";
+            try { Process.Start(url); Log("Открываю " + url, Theme.Dim); }
+            catch (Exception ex) { Log(ex.Message, Theme.Err); }
+        }
+
+        // ---------------- сборка ----------------
+
+        /// <summary>Один exe: хост-рантайм с приложением в хвосте.</summary>
+        void BuildSingleExe()
+        {
+            if (projectDir == null) { Log("Сначала откройте проект.", Theme.Err); return; }
+
+            SaveAll();
+            DappPackage.Log = delegate (string s) { Log(s, Theme.Text); };
+            DappBundle.Log = delegate (string s) { Log(s, Theme.Text); };
+
+            string host = EmbeddedRuntime.HostPath();
+            if (host == null)
+            {
+                Log("Рантайм DupoHost не найден ни рядом со студией, ни внутри неё.", Theme.Err);
+                return;
+            }
+
+            string name = Path.GetFileName(projectDir);
+            string outDir = Path.Combine(projectDir, "build");
+            string temp = Path.Combine(Path.GetTempPath(),
+                DappPackage.SafeName(name) + "-" + Guid.NewGuid().ToString("N") + DappPackage.Extension);
+
+            try
+            {
+                Directory.CreateDirectory(outDir);
+
+                var manifest = new DappManifest();
+                manifest.Name = name;
+                manifest.Created = DateTime.Now.ToString("dd.MM.yyyy HH:mm");
+
+                var ed = ActiveEditor;
+                if (ed != null && ed.FilePath != null &&
+                    ed.FilePath.EndsWith(".dupolang", StringComparison.OrdinalIgnoreCase))
+                {
+                    manifest.Main = ed.FilePath.Substring(projectDir.Length)
+                        .TrimStart('\\', '/').Replace('\\', '/');
+                }
+
+                DappPackage.Create(projectDir, temp, manifest);
+                byte[] payload = File.ReadAllBytes(temp);
+
+                string outExe = Path.Combine(outDir, DappPackage.SafeName(name) + ".exe");
+                DappBundle.Build(host, outExe, payload);
+
+                Log("Готово — это один самостоятельный файл, DLL рядом не нужны.", Theme.Ok);
+                RefreshTree();
+            }
+            catch (Exception ex) { Log("✖  Сборка не удалась: " + ex.Message, Theme.Err); }
+            finally { try { if (File.Exists(temp)) File.Delete(temp); } catch { } }
+        }
+
+
+        void BuildApp()
+        {
+            if (projectDir == null) { Log("Сначала откройте проект.", Theme.Err); return; }
+
+            SaveAll();
+            string name = Path.GetFileName(projectDir);
+            string outDir = Path.Combine(projectDir, "build");
+
+            try
+            {
+                if (Directory.Exists(outDir)) Directory.Delete(outDir, true);
+                Directory.CreateDirectory(outDir);
+
+                CopyTree(projectDir, outDir);
+
+                string runner = EmbeddedRuntime.HostPath();
+                if (runner == null)
+                {
+                    Log("Рантайм DupoHost не найден ни рядом со студией, ни внутри неё.", Theme.Err);
+                    return;
+                }
+
+                // В рантайме язык уже внутри, отдельная DupoLang.dll не нужна.
+                File.Copy(runner, Path.Combine(outDir, name + ".exe"), true);
+
+                Log("Собрано: " + Path.Combine(outDir, name + ".exe"), Theme.Ok);
+                Log("Рядом лежат исходники — код видно и можно править.", Theme.Dim);
+                RefreshTree();
+            }
+            catch (Exception ex) { Log("✖  Сборка не удалась: " + ex.Message, Theme.Err); }
+        }
+
+        static void CopyTree(string from, string to)
+        {
+            foreach (string file in Directory.GetFiles(from))
+                File.Copy(file, Path.Combine(to, Path.GetFileName(file)), true);
+
+            foreach (string dir in Directory.GetDirectories(from))
+            {
+                string name = Path.GetFileName(dir);
+                if (SkipDirs.Contains(name.ToLowerInvariant())) continue;
+                string target = Path.Combine(to, name);
+                Directory.CreateDirectory(target);
+                CopyTree(dir, target);
+            }
+        }
+
+        // ---------------- формат .dapp ----------------
+
+        void ExportDapp()
+        {
+            if (projectDir == null) { Log("Сначала откройте проект.", Theme.Err); return; }
+
+            SaveAll();
+            DappPackage.Log = delegate (string s) { Log(s, Theme.Text); };
+
+            string name = Path.GetFileName(projectDir);
+
+            using (var dlg = new SaveFileDialog())
+            {
+                dlg.Title = "Экспорт приложения";
+                dlg.Filter = "Приложение DupoLang (*.dapp)|*.dapp";
+                dlg.FileName = DappPackage.SafeName(name) + DappPackage.Extension;
+                dlg.InitialDirectory = Path.Combine(DupoRuntime.RuntimeDir, "Projects");
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+                var manifest = new DappManifest();
+                manifest.Name = name;
+                manifest.Version = PromptDialog.Show(this, "Экспорт", "Версия приложения:", "1.0") ?? "1.0";
+                manifest.Created = DateTime.Now.ToString("dd.MM.yyyy HH:mm");
+
+                var ed = ActiveEditor;
+                if (ed != null && ed.FilePath != null &&
+                    ed.FilePath.EndsWith(".dupolang", StringComparison.OrdinalIgnoreCase))
+                {
+                    manifest.Main = ed.FilePath.Substring(projectDir.Length)
+                        .TrimStart('\\', '/').Replace('\\', '/');
+                }
+
+                try
+                {
+                    string file = DappPackage.Create(projectDir, dlg.FileName, manifest);
+                    Log("Экспорт готов: " + file, Theme.Ok);
+                    Log("Запуск: DupoRun.exe \"" + Path.GetFileName(file) + "\"", Theme.Dim);
+                }
+                catch (Exception ex) { Log("✖  Экспорт не удался: " + ex.Message, Theme.Err); }
+            }
+        }
+
+        void ImportDapp()
+        {
+            DappPackage.Log = delegate (string s) { Log(s, Theme.Text); };
+
+            using (var dlg = new OpenFileDialog())
+            {
+                dlg.Title = "Импорт приложения";
+                dlg.Filter = "Приложение DupoLang (*.dapp)|*.dapp";
+                dlg.InitialDirectory = Path.Combine(DupoRuntime.RuntimeDir, "Projects");
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+                try
+                {
+                    DappInfo info = DappPackage.Read(dlg.FileName);
+                    Log(info.Summary(), Theme.Info);
+
+                    string baseDir = Path.Combine(DupoRuntime.RuntimeDir, "Projects",
+                                                  DappPackage.SafeName(info.Manifest.Name));
+                    string target = baseDir;
+                    int n = 2;
+                    while (Directory.Exists(target)) { target = baseDir + "_" + n; n++; }
+
+                    string main = DappPackage.Extract(dlg.FileName, target);
+                    OpenProject(target);
+                    if (File.Exists(main)) OpenFile(main);
+                    Log("Импортировано: " + target, Theme.Ok);
+                }
+                catch (Exception ex) { Log("✖  Импорт не удался: " + ex.Message, Theme.Err); }
+            }
+        }
+
+        // ---------------- мелочи ----------------
+
+        void Banner()
+        {
+            Log("  ╭───────────────────────────────────────────────╮", Theme.Accent);
+            Log("  │   D U P O   S T U D I O   ·   App Maker        │", Theme.Accent);
+            Log("  ╰───────────────────────────────────────────────╯", Theme.Accent);
+            Log("  DupoLang " + Dupo.Version + "   ·   Dupo.Web · Dupo.Java · Dupo.System.Files · Dupo.App", Theme.Dim);
+            Log("  F5 запуск   ·   Shift+F5 стоп   ·   Ctrl+B один .exe   ·   Ctrl+E .dapp", Theme.Dim);
+            Log("", Theme.Text);
+            UpdatePhpStatus();
+        }
+
+        void UpdatePhpStatus()
+        {
+            bool ok = PhpTools.Instance.IsInstalled;
+            lblPhp.Text = ok ? "PHP готов" : "PHP не установлен";
+            lblPhp.ForeColor = ok ? Color.FromArgb(180, 240, 200) : Color.FromArgb(255, 220, 170);
+            UpdateJavaStatus();
+        }
+
+        void UpdateJavaStatus()
+        {
+            bool ok = JavaTools.Instance.IsInstalled;
+            lblJava.Text = ok ? "JDK готов" : "JDK не установлен";
+            lblJava.ForeColor = ok ? Color.FromArgb(180, 240, 200) : Color.FromArgb(255, 220, 170);
+        }
+
+        void About()
+        {
+            MessageBox.Show(this,
+                "Dupo Studio — App Maker\r\n" +
+                "Язык DupoLang " + Dupo.Version + "\r\n\r\n" +
+                "import Dupo.Web\r\n" +
+                "Web.Server s = new Web.Server(8080, \"www\", \"index\")\r\n" +
+                "Web.Server.Php.Install()\r\n" +
+                "s.Start()",
+                "О программе", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        void Log(string text, Color color)
+        {
+            if (text == null) text = "";
+            if (InvokeRequired) { BeginInvoke(new Action<string, Color>(Log), text, color); return; }
+
+            console.Write(text, color);
+        }
+
+        void Status(string text)
+        {
+            if (InvokeRequired) { BeginInvoke(new Action<string>(Status), text); return; }
+            lblStatus.Text = text;
+        }
+
+        void UpdateCaret()
+        {
+            var ed = ActiveEditor;
+            lblCaret.Text = ed == null ? "" : ed.CurrentLine + " : " + ed.CurrentColumn;
+        }
+
+        void OnClosing(object sender, FormClosingEventArgs e)
+        {
+            if (editors.HasDirty)
+            {
+                var r = MessageBox.Show(this, "Есть несохранённые изменения. Сохранить?",
+                    "Dupo Studio", MessageBoxButtons.YesNoCancel);
+                if (r == DialogResult.Cancel) { e.Cancel = true; return; }
+                if (r == DialogResult.Yes) SaveAll();
+            }
+
+            AskAutostart();
+
+            if (interp != null) { try { interp.Shutdown(); } catch { } }
+            if (runThread != null && runThread.IsAlive) { try { runThread.Abort(); } catch { } }
+        }
+    }
+}
