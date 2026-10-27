@@ -13,7 +13,7 @@ namespace DupoSetup
         static readonly Color Back = Color.FromArgb(22, 26, 33);
         static readonly Color Card = Color.FromArgb(30, 36, 46);
         static readonly Color Line = Color.FromArgb(52, 60, 74);
-        static readonly Color Text = Color.FromArgb(230, 235, 243);
+        static readonly Color Fore = Color.FromArgb(230, 235, 243);   // не Text: это имя занято Form.Text
         static readonly Color Dim = Color.FromArgb(139, 151, 171);
         static readonly Color Accent = Color.FromArgb(43, 127, 255);
         static readonly Color Ok = Color.FromArgb(106, 190, 120);
@@ -49,7 +49,7 @@ namespace DupoSetup
             MaximizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = Back;
-            ForeColor = Text;
+            ForeColor = Fore;
 
             try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
 
@@ -60,7 +60,7 @@ namespace DupoSetup
         {
             title.Text = info.Name;
             title.Font = new Font("Segoe UI", 20f, FontStyle.Bold);
-            title.ForeColor = Text;
+            title.ForeColor = Fore;
             title.SetBounds(26, 22, 500, 34);
 
             subtitle.Text = "Версия " + info.Version +
@@ -80,7 +80,7 @@ namespace DupoSetup
             pathBox.Text = info.DefaultDir;
             pathBox.SetBounds(28, 122, 408, 26);
             pathBox.BackColor = Card;
-            pathBox.ForeColor = Text;
+            pathBox.ForeColor = Fore;
             pathBox.BorderStyle = BorderStyle.FixedSingle;
             pathBox.ReadOnly = uninstallMode;
 
@@ -88,7 +88,7 @@ namespace DupoSetup
             browse.SetBounds(444, 121, 88, 28);
             browse.FlatStyle = FlatStyle.Flat;
             browse.BackColor = Card;
-            browse.ForeColor = Text;
+            browse.ForeColor = Fore;
             browse.FlatAppearance.BorderColor = Line;
             browse.Visible = !uninstallMode;
             browse.Click += delegate
@@ -148,7 +148,7 @@ namespace DupoSetup
             cancel.SetBounds(card(1), 376, 96, 34);
             cancel.FlatStyle = FlatStyle.Flat;
             cancel.BackColor = Card;
-            cancel.ForeColor = Text;
+            cancel.ForeColor = Fore;
             cancel.FlatAppearance.BorderColor = Line;
             cancel.Click += delegate { Close(); };
 
