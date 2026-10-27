@@ -123,6 +123,17 @@ namespace DupoStudio
             sb.AppendLine("number.color   = \"#BBD98B\";");
             sb.AppendLine("comment.color  = \"#6A7F6A\";");
             sb.AppendLine();
+            sb.AppendLine("// Поля редактора и подсказок");
+            sb.AppendLine("// gutter.color     = \"#171A21\";   // полоса с номерами строк");
+            sb.AppendLine("// lineNumber.color = \"#5A6478\";   // сами номера");
+            sb.AppendLine("// editor.color     = \"#14161C\";   // поле кода");
+            sb.AppendLine();
+            sb.AppendLine("// Сообщения в консоли");
+            sb.AppendLine("// ok.color    = \"#78C878\";");
+            sb.AppendLine("// warn.color  = \"#D8B860\";");
+            sb.AppendLine("// error.color = \"#E06C75\";");
+            sb.AppendLine("// info.color  = \"#6FA8DC\";");
+            sb.AppendLine();
             sb.AppendLine("// Можно и считать что-нибудь — это полноценный C#.");
             sb.AppendLine("// for (int i = 0; i < 1; i++) { ok.color = \"#78C878\"; }");
 
