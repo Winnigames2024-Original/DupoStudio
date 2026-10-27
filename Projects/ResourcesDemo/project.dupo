@@ -1,0 +1,9 @@
+# Свойства проекта Dupo Studio
+name=ResourcesDemo
+product=Dupo Studio
+author=Winnigames2024
+version=1.0
+description=Пример работы с папкой Resources
+namespace=ResourcesDemo
+javapackage=com.winnigames2024.resourcesdemo
+singleexe=1

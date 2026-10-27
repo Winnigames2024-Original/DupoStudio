@@ -12,6 +12,9 @@ namespace DupoStudio
     {
         public readonly TabControl Tabs = new TabControl();
 
+        /// <summary>Папка открытого проекта — нужна подсказкам, чтобы знать ресурсы.</summary>
+        public Func<string> ProjectDir = delegate { return null; };
+
         /// <summary>Курсор переехал — окну проекта пора обновить строку состояния.</summary>
         public event EventHandler CaretMoved;
 
@@ -85,6 +88,7 @@ namespace DupoStudio
 
             var host = new EditorHost();
             host.Dock = DockStyle.Fill;
+            host.Completion.ProjectDir = ProjectDir;
 
             CodeEditor editor = host.Editor;
             editor.FilePath = path;

@@ -8,6 +8,8 @@ namespace DupoStudio
     public class EditorHost : Panel
     {
         public readonly CodeEditor Editor = new CodeEditor();
+        public readonly CodeCompletion Completion;
+
         readonly Panel gutter = new Panel();
 
         public EditorHost()
@@ -23,6 +25,9 @@ namespace DupoStudio
 
             Controls.Add(Editor);
             Controls.Add(gutter);
+
+            Completion = new CodeCompletion(Editor);
+            Completion.AttachTo(this);
 
             gutter.Paint += PaintGutter;
             Editor.VScroll += delegate { gutter.Invalidate(); };

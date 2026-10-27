@@ -17,6 +17,7 @@ namespace DupoStudio
     public partial class ProjectEditorForm : Form
     {
         string projectDir;
+        ProjectSettings project = new ProjectSettings();
         Thread runThread;
         Interp interp;
         bool running;
@@ -75,6 +76,8 @@ namespace DupoStudio
             miToolsRemove.Click += delegate { RemoveBuildTools(); };
             miBrowser.Click += delegate { OpenBrowser(); };
             miFolder.Click += delegate { if (projectDir != null) Process.Start(projectDir); };
+            miProperties.Click += delegate { ShowProperties(); };
+            miResources.Click += delegate { OpenResources(); };
             miAbout.Click += delegate { About(); };
 
             tbNew.Click += delegate { NewProject(); };
@@ -86,11 +89,41 @@ namespace DupoStudio
             tbBrowser.Click += delegate { OpenBrowser(); };
             tbExport.Click += delegate { ExportDapp(); };
 
+            editors.ProjectDir = delegate { return projectDir; };
             explorer.FileActivated += delegate (object s, string path) { OpenFile(path); };
             editors.CaretMoved += delegate { UpdateCaret(); };
 
             FormClosing += OnClosing;
             UpdateRunState();
+        }
+
+        // ---------------- свойства проекта ----------------
+
+        void ShowProperties()
+        {
+            if (projectDir == null) { Log("Сначала откройте проект.", Theme.Err); return; }
+
+            using (var dlg = new PropertiesForm(project))
+            {
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+            }
+
+            Log("Свойства сохранены: " + project.FilePath, Theme.Ok);
+            Log("Приложение: " + project.Name + " " + project.Version +
+                "   ·   " + project.Author + "   ·   " + project.Product, Theme.Dim);
+
+            RefreshTree();
+        }
+
+        void OpenResources()
+        {
+            if (projectDir == null) { Log("Сначала откройте проект.", Theme.Err); return; }
+
+            string dir = project.ResourcesDir;
+            Directory.CreateDirectory(dir);
+
+            try { Process.Start(dir); }
+            catch (Exception ex) { Log(ex.Message, Theme.Err); }
         }
 
         // ---------------- автозапуск ----------------
@@ -173,6 +206,7 @@ namespace DupoStudio
         {
             projectDir = dir;
             DupoRuntime.ProjectDir = dir;
+            project = ProjectSettings.Load(dir);
             Text = "Dupo Studio — " + Path.GetFileName(dir);
             lblProject.Text = "  " + Path.GetFileName(dir) + "  ";
             RefreshTree();
@@ -461,7 +495,7 @@ namespace DupoStudio
                 Directory.CreateDirectory(outDir);
 
                 var manifest = new DappManifest();
-                manifest.Name = name;
+                project.IntoManifest(manifest);
                 manifest.Created = DateTime.Now.ToString("dd.MM.yyyy HH:mm");
 
                 var ed = ActiveEditor;
@@ -489,6 +523,13 @@ namespace DupoStudio
         void BuildApp()
         {
             if (projectDir == null) { Log("Сначала откройте проект.", Theme.Err); return; }
+
+            if (project.SingleExe)
+            {
+                Log("В свойствах проекта включено «Собирать в один exe» — собираю так.", Theme.Dim);
+                BuildSingleExe();
+                return;
+            }
 
             SaveAll();
             string name = Path.GetFileName(projectDir);
@@ -553,8 +594,9 @@ namespace DupoStudio
                 if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
                 var manifest = new DappManifest();
-                manifest.Name = name;
-                manifest.Version = PromptDialog.Show(this, "Экспорт", "Версия приложения:", "1.0") ?? "1.0";
+                project.IntoManifest(manifest);
+                manifest.Version = PromptDialog.Show(this, "Экспорт", "Версия приложения:",
+                                                     project.Version) ?? project.Version;
                 manifest.Created = DateTime.Now.ToString("dd.MM.yyyy HH:mm");
 
                 var ed = ActiveEditor;

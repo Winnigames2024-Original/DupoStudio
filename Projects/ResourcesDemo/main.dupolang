@@ -1,0 +1,22 @@
+// ResourcesDemo — файлы из папки Resources прямо из кода
+using Dupo.Resources
+using Dupo.System.Files
+
+print("=== Ресурсы проекта ===")
+print("Папка: " + Resources.Folder)
+print("Всего: " + Resources.Count)
+print("")
+
+// После точки студия подсказывает имена добавленных файлов.
+print("Название: " + Resources.readme.FileName)
+print("Размер: " + Resources.readme.Size + " байт")
+print("")
+print("--- содержимое ---")
+print(Resources.readme.Text)
+print("------------------")
+print("")
+
+// Ресурс сам превращается в путь, поэтому его можно отдать куда угодно.
+Files.Copy(Resources.readme, "copy-of-readme.txt")
+print("Скопирован рядом: " + Files.Exists("copy-of-readme.txt"))
+Files.Delete("copy-of-readme.txt")

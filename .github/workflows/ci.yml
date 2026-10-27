@@ -59,6 +59,9 @@ jobs:
           & "tools/DupoBuild.exe" "Projects/HelloWeb" "tools/HelloWeb.exe" "name=HelloWeb"
           if ($LASTEXITCODE -ne 0) { throw "DupoBuild.exe вернул $LASTEXITCODE" }
 
+          & "tools/DupoLang.exe" --check "Projects/ResourcesDemo/main.dupolang"
+          if ($LASTEXITCODE -ne 0) { throw "ResourcesDemo не разобрался" }
+
           & "tools/DupoBuild.exe" --info "tools/HelloWeb.exe"
           if ($LASTEXITCODE -ne 0) { throw "DupoBuild.exe --info вернул $LASTEXITCODE" }
 

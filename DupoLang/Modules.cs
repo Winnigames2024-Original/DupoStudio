@@ -13,7 +13,7 @@ namespace DupoLang
     {
         public static readonly string[] Available =
         {
-            "Dupo.Web", "Dupo.App", "Dupo.Java", "Dupo.Tools",
+            "Dupo.Web", "Dupo.App", "Dupo.Java", "Dupo.Tools", "Dupo.Resources",
             "Dupo.System.Files", "Dupo.System", "Dupo.IO", "Dupo.Sys"
         };
 
@@ -27,6 +27,7 @@ namespace DupoLang
                 case "Dupo.App": return App(interp);
                 case "Dupo.Java": return Java(interp);
                 case "Dupo.Tools": return Tools(interp);
+                case "Dupo.Resources": return ResourcesNs(interp);
                 case "Dupo.System.Files": return Files(interp);
                 case "Dupo.System": return SystemNs(interp);
             }
@@ -133,6 +134,25 @@ namespace DupoLang
             var ns = new NativeNamespace("Tools");
             ns.Target = BuildTools.Instance;
             ns.Backing = typeof(BuildTools);
+            return ns;
+        }
+
+        // ---------------- Dupo.Resources ----------------
+        static NativeNamespace ResourcesNs(Interp interp)
+        {
+            var ns = new NativeNamespace("Resources");
+
+            var found = ResourceSet.Load();
+            foreach (var pair in found) ns.Members[pair.Key] = pair.Value;
+
+            // Пара служебных имён на случай, если ресурс назван так же — не беда,
+            // свои члены в словаре идут первыми.
+            if (!ns.Members.ContainsKey("Folder")) ns.Members["Folder"] = ResourceSet.Folder;
+            if (!ns.Members.ContainsKey("Count")) ns.Members["Count"] = (double)found.Count;
+
+            interp.Print("Ресурсов подключено: " + found.Count +
+                         (found.Count == 0 ? "  (папка " + ResourceSet.FolderName + " пуста или её нет)" : ""));
+
             return ns;
         }
 

@@ -9,10 +9,12 @@
     <AssemblyName>DupoLang</AssemblyName>
     <RootNamespace>DupoCs</RootNamespace>
     <CodePage>65001</CodePage>
-    <ApplicationIcon>..\DupoStudio\Resources\dupo.ico</ApplicationIcon>
-    <Version>0.0.5</Version>
-    <Product>DupoLang to C#</Product>
+    <Version>0.0.1</Version>
+    <Product>Dupo Studio</Product>
     <Company>Winnigames2024</Company>
+    <Authors>Winnigames2024</Authors>
+    <Copyright>© 2026 Winnigames2024</Copyright>
+    <ApplicationIcon>..\DupoStudio\Resources\dupo.ico</ApplicationIcon>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 

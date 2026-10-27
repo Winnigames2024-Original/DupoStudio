@@ -14,6 +14,7 @@ namespace DupoStudio
         ToolStripMenuItem miTools, miPhpInstall, miPhpInfo, miPhpRemove;
         ToolStripMenuItem miJdkInstall, miJdkInfo, miJdkRemove, miBrowser, miFolder;
         ToolStripMenuItem miToolsGet, miToolsFolder, miToolsRemove;
+        ToolStripMenuItem miProject, miProperties, miResources;
         ToolStripMenuItem miHelp, miAbout;
 
         ToolStrip toolMain;
@@ -70,6 +71,10 @@ namespace DupoStudio
             miBrowser = new ToolStripMenuItem("Открыть в браузере");
             miFolder = new ToolStripMenuItem("Открыть папку проекта");
 
+            miProject = new ToolStripMenuItem("Проект");
+            miProperties = new ToolStripMenuItem("Свойства проекта...");
+            miResources = new ToolStripMenuItem("Папка ресурсов");
+
             miHelp = new ToolStripMenuItem("Справка");
             miAbout = new ToolStripMenuItem("О программе");
 
@@ -121,6 +126,7 @@ namespace DupoStudio
                 miToolsGet, miToolsFolder, miToolsRemove, new ToolStripSeparator(),
                 miBrowser, miFolder });
 
+            miProject.DropDownItems.AddRange(new ToolStripItem[] { miProperties, miResources });
             miHelp.DropDownItems.Add(miAbout);
 
             miNewProject.ShortcutKeys = Keys.Control | Keys.N;
@@ -133,10 +139,11 @@ namespace DupoStudio
             miStop.ShortcutKeys = Keys.Shift | Keys.F5;
             miBuildExe.ShortcutKeys = Keys.Control | Keys.B;
             miClose.ShortcutKeys = Keys.Control | Keys.W;
+            miProperties.ShortcutKeys = Keys.Alt | Keys.Enter;
 
             miAutostart.CheckOnClick = true;
 
-            menuMain.Items.AddRange(new ToolStripItem[] { miFile, miRun, miTools, miHelp });
+            menuMain.Items.AddRange(new ToolStripItem[] { miFile, miProject, miRun, miTools, miHelp });
             menuMain.BackColor = Theme.Chrome;
             menuMain.ForeColor = Theme.Text;
             menuMain.Padding = new Padding(6, 2, 0, 2);
