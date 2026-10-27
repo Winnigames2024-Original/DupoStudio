@@ -14,7 +14,7 @@ namespace DupoLang
         public static readonly string[] Available =
         {
             "Dupo.Web", "Dupo.App", "Dupo.Java", "Dupo.Tools", "Dupo.Resources",
-            "Dupo.System.Files", "Dupo.System", "Dupo.IO", "Dupo.Sys"
+            "Dupo.Services", "Dupo.System.Files", "Dupo.System", "Dupo.IO", "Dupo.Sys"
         };
 
         public static NativeNamespace Load(string module, Interp interp)
@@ -28,6 +28,7 @@ namespace DupoLang
                 case "Dupo.Java": return Java(interp);
                 case "Dupo.Tools": return Tools(interp);
                 case "Dupo.Resources": return ResourcesNs(interp);
+                case "Dupo.Services": return ServicesNs(interp);
                 case "Dupo.System.Files": return Files(interp);
                 case "Dupo.System": return SystemNs(interp);
             }
@@ -156,6 +157,18 @@ namespace DupoLang
             return ns;
         }
 
+        // ---------------- Dupo.Services ----------------
+        static NativeNamespace ServicesNs(Interp interp)
+        {
+            ServiceTools.Log = interp.Print;
+
+            var ns = new NativeNamespace("Services");
+            ns.Members["Service"] = new NativeType("Service", typeof(DupoService));
+            ns.Members["ServiceLevel"] = new NativeType("ServiceLevel", typeof(ServiceLevel));
+            ns.Backing = typeof(ServiceTools);
+            return ns;
+        }
+
         // ---------------- Dupo.System.Files ----------------
         static NativeNamespace Files(Interp interp)
         {
@@ -172,6 +185,7 @@ namespace DupoLang
             var ns = new NativeNamespace("System");
             ns.Members["Files"] = Files(interp);
             ns.Members["Java"] = Java(interp);
+            ns.Members["Services"] = ServicesNs(interp);
             ns.Members["Sys"] = Sys();
             return ns;
         }

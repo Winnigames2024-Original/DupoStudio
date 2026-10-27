@@ -1,0 +1,9 @@
+# Свойства проекта Dupo Studio
+name=ServiceDemo
+product=Dupo Studio
+author=Winnigames2024
+version=1.0
+description=Пример сервисов: Dupo.Services и типы ServiceLevel
+namespace=ServiceDemo
+javapackage=com.winnigames2024.servicedemo
+singleexe=1

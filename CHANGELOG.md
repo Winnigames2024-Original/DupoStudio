@@ -3,6 +3,22 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
 нумерация по [SemVer](https://semver.org/lang/ru/).
 
+## [Не выпущено]
+
+### Сервисы
+- Модуль `Dupo.Services`: `Services.Service` и десять типов
+  `Services.ServiceLevel` — от `SystemProcess` до `Background`.
+- `Install`, `Uninstall`, `Start`, `Stop`, `Restart`, `Info`, свойства
+  `Installed`, `Running`, `State`, `NeedsAdmin`.
+- Службы системы ставятся через `sc.exe`, процессы пользователя — через
+  автозапуск в реестре, так что права администратора нужны не всегда.
+- Фоновый сервис самой студии: `DupoStudio.exe --agent`. Меню
+  «Инструменты → Фоновый сервис»: установка, запуск, остановка, журнал
+  и «Собрать проект в фоне» — очередь заданий переживает закрытие студии.
+- Подсказки знают про `Services.`, `Services.ServiceLevel.` и про
+  переменные, объявленные типом из API.
+- Пример `Projects/ServiceDemo`.
+
 ## [0.0.1] — 2026-10-27
 
 Первый выпуск. Автор — Winnigames2024, продукт — Dupo Studio.

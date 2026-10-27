@@ -74,6 +74,12 @@ namespace DupoStudio
             miToolsGet.Click += delegate { GetBuildTools(); };
             miToolsFolder.Click += delegate { OpenToolsFolder(); };
             miToolsRemove.Click += delegate { RemoveBuildTools(); };
+            miSvcInstall.Click += delegate { ServiceAction("install"); };
+            miSvcRemove.Click += delegate { ServiceAction("remove"); };
+            miSvcStart.Click += delegate { ServiceAction("start"); };
+            miSvcStop.Click += delegate { ServiceAction("stop"); };
+            miSvcStatus.Click += delegate { ServiceStatus(); };
+            miSvcQueue.Click += delegate { QueueBuild(); };
             miBrowser.Click += delegate { OpenBrowser(); };
             miFolder.Click += delegate { if (projectDir != null) Process.Start(projectDir); };
             miProperties.Click += delegate { ShowProperties(); };
@@ -429,6 +435,80 @@ namespace DupoStudio
             });
             t.IsBackground = true;
             t.Start();
+        }
+
+        // ------------------------------------------------------------------
+        // фоновый сервис студии
+        // ------------------------------------------------------------------
+
+        void ServiceAction(string what)
+        {
+            var svc = AgentService.Describe();
+            ServiceTools.Log = delegate (string s) { Log(s, Theme.Info); };
+
+            try
+            {
+                switch (what)
+                {
+                    case "install":
+                        if (svc.Install())
+                        {
+                            svc.Start();
+                            Log("Сервис будет подниматься сам при входе в систему.", Theme.Dim);
+                        }
+                        break;
+                    case "remove": svc.Uninstall(); break;
+                    case "start": svc.Start(); break;
+                    case "stop": StopAgent(svc); break;
+                }
+            }
+            catch (Exception ex) { Log("Сервис: " + ex.Message, Theme.Err); }
+
+            Log(svc.Name + " — " + svc.State, Theme.Dim);
+        }
+
+        /// <summary>Сначала просим агента выйти по-хорошему, потом — силой.</summary>
+        void StopAgent(DupoService svc)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo(svc.ExePath, AgentService.Switch + " --stop");
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+                using (var p = Process.Start(psi)) p.WaitForExit(5000);
+            }
+            catch { }
+
+            Thread.Sleep(300);
+            if (svc.Running) svc.Stop();
+            else Log("Сервис " + svc.Name + " остановлен", Theme.Info);
+        }
+
+        void ServiceStatus()
+        {
+            var svc = AgentService.Describe();
+            Log("── Фоновый сервис ──", Theme.Info);
+            foreach (var line in svc.Info().Split('\r', '\n'))
+                if (line.Trim().Length > 0) Log(line.Trim(), Theme.Dim);
+            Log("Заданий в очереди: " + AgentService.Pending(), Theme.Dim);
+            Log("Журнал: " + AgentService.LogPath, Theme.Dim);
+            foreach (var line in AgentService.Tail(12).Split('\r', '\n'))
+                if (line.Trim().Length > 0) Log("  " + line.Trim(), Theme.Dim);
+        }
+
+        void QueueBuild()
+        {
+            if (projectDir == null) { Log("Проект не открыт.", Theme.Dim); return; }
+
+            var svc = AgentService.Describe();
+            AgentService.Enqueue("build " + projectDir);
+            Log("Задание на сборку поставлено в очередь агенту.", Theme.Ok);
+
+            if (!svc.Running)
+            {
+                ServiceTools.Log = delegate (string s) { Log(s, Theme.Info); };
+                svc.Start();
+            }
         }
 
         void OpenToolsFolder()

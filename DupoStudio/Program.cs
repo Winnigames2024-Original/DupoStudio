@@ -14,8 +14,21 @@ namespace DupoStudio
             // сам запуск вынесен в отдельный метод, иначе библиотека понадобится
             // ещё при входе в Main.
             EmbeddedRuntime.Install();
+
+            // Фоновый режим: окон нет, работаем как сервис.
+            if (args != null)
+                foreach (string a in args)
+                    if (string.Equals(a, "--agent", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Environment.ExitCode = Agent(args);
+                        return;
+                    }
+
             Start(args);
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Agent(string[] args) { return AgentService.Run(args); }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void Start(string[] args)

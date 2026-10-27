@@ -43,7 +43,18 @@ namespace DupoStudio
                 "ReadFile", "WriteFile", "AppendFile", "Exists", "MakeDir",
                 "Delete", "Files", "Dirs", "ProjectDir" } },
             { "Sys", new[] { "Run", "Open", "Env", "Sleep", "Time", "Date" } },
-            { "System", new[] { "Files", "Java", "Sys" } },
+            { "System", new[] { "Files", "Java", "Sys", "Services" } },
+            { "Services", new[] {
+                "Service", "ServiceLevel", "Exists", "State", "List", "Levels",
+                "LevelName", "IsAdmin" } },
+            { "Services.Service", new[] {
+                "Name", "Description", "Level", "LevelName", "ExePath", "Args", "WorkDir",
+                "Program", "Arguments", "Folder", "SetLevel",
+                "Install", "Uninstall", "Start", "Stop", "Restart",
+                "Installed", "Running", "State", "NeedsAdmin", "Info" } },
+            { "Services.ServiceLevel", new[] {
+                "SystemProcess", "LocalService", "NetworkService", "Delayed", "Manual",
+                "Interactive", "Disabled", "UserProcess", "Background", "Process" } },
         };
 
         static readonly string[] Globals =
@@ -52,7 +63,7 @@ namespace DupoStudio
             "break", "continue", "true", "false", "null", "new",
             "print", "println", "str", "num", "int", "round", "abs", "type", "len",
             "wait", "now", "random", "list", "push", "upper", "lower", "split",
-            "Web", "Files", "Java", "Tools", "App", "IO", "Sys", "Resources"
+            "Web", "Files", "Java", "Tools", "App", "IO", "Sys", "Resources", "Services"
         };
 
         public CodeCompletion(CodeEditor owner)
@@ -156,7 +167,35 @@ namespace DupoStudio
             if (owner.EndsWith("Php", StringComparison.OrdinalIgnoreCase))
                 return new List<string> { "Install", "Uninstall", "IsInstalled", "Version", "Folder" };
 
+            if (owner.EndsWith("ServiceLevel", StringComparison.OrdinalIgnoreCase))
+                return new List<string>(Members["Services.ServiceLevel"]);
+
+            // Переменная: ищем, каким типом её объявили, и подсказываем члены типа.
+            string declared = DeclaredType(owner);
+            if (declared != null && !string.Equals(declared, owner, StringComparison.OrdinalIgnoreCase))
+                return MembersOf(declared);
+
             return new List<string>();
+        }
+
+        /// <summary>Тип из объявления «Services.Service agent = ...» для имени agent.</summary>
+        string DeclaredType(string name)
+        {
+            if (string.IsNullOrEmpty(name) || name.IndexOf('.') >= 0) return null;
+
+            try
+            {
+                var m = System.Text.RegularExpressions.Regex.Match(
+                    editor.Text,
+                    @"(?m)^\s*([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s+" +
+                    System.Text.RegularExpressions.Regex.Escape(name) + @"\s*=");
+                if (!m.Success) return null;
+
+                string type = m.Groups[1].Value;
+                if (string.Equals(type, "var", StringComparison.OrdinalIgnoreCase)) return null;
+                return type;
+            }
+            catch { return null; }
         }
 
         List<string> Candidates()

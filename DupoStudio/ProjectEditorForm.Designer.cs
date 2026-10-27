@@ -14,6 +14,7 @@ namespace DupoStudio
         ToolStripMenuItem miTools, miPhpInstall, miPhpInfo, miPhpRemove;
         ToolStripMenuItem miJdkInstall, miJdkInfo, miJdkRemove, miBrowser, miFolder;
         ToolStripMenuItem miToolsGet, miToolsFolder, miToolsRemove;
+        ToolStripMenuItem miService, miSvcInstall, miSvcStart, miSvcStop, miSvcRemove, miSvcStatus, miSvcQueue;
         ToolStripMenuItem miProject, miProperties, miResources;
         ToolStripMenuItem miHelp, miAbout;
 
@@ -68,6 +69,19 @@ namespace DupoStudio
             miToolsGet = new ToolStripMenuItem("Скачать BuildTools с GitHub");
             miToolsFolder = new ToolStripMenuItem("Папка BuildTools");
             miToolsRemove = new ToolStripMenuItem("Удалить BuildTools");
+
+            miService = new ToolStripMenuItem("Фоновый сервис");
+            miSvcInstall = new ToolStripMenuItem("Установить сервис");
+            miSvcStart = new ToolStripMenuItem("Запустить");
+            miSvcStop = new ToolStripMenuItem("Остановить");
+            miSvcRemove = new ToolStripMenuItem("Удалить сервис");
+            miSvcStatus = new ToolStripMenuItem("Состояние и журнал");
+            miSvcQueue = new ToolStripMenuItem("Собрать проект в фоне");
+            miService.DropDownItems.AddRange(new ToolStripItem[] {
+                miSvcInstall, miSvcRemove, new ToolStripSeparator(),
+                miSvcStart, miSvcStop, new ToolStripSeparator(),
+                miSvcQueue, miSvcStatus });
+
             miBrowser = new ToolStripMenuItem("Открыть в браузере");
             miFolder = new ToolStripMenuItem("Открыть папку проекта");
 
@@ -124,6 +138,7 @@ namespace DupoStudio
                 miPhpInstall, miPhpInfo, miPhpRemove, new ToolStripSeparator(),
                 miJdkInstall, miJdkInfo, miJdkRemove, new ToolStripSeparator(),
                 miToolsGet, miToolsFolder, miToolsRemove, new ToolStripSeparator(),
+                miService, new ToolStripSeparator(),
                 miBrowser, miFolder });
 
             miProject.DropDownItems.AddRange(new ToolStripItem[] { miProperties, miResources });

@@ -1,0 +1,53 @@
+// ServiceDemo — свои сервисы на DupoLang
+using Dupo.Services
+using Dupo.System.Files
+
+print("=== Сервисы ===")
+print("Права администратора: " + Services.IsAdmin)
+print("Доступные типы: " + Services.Levels())
+print("")
+
+// Фоновый процесс пользователя: прав администратора не нужно,
+// поднимается сам при входе в систему.
+Services.Service agent = new Services.Service(
+    "DemoAgent",
+    "демонстрационный фоновый сервис",
+    Services.ServiceLevel.Background)
+
+agent.Program(Files.Join(Files.ProjectDir(), "worker.bat"))
+
+print(agent.Info())
+
+agent.Install()
+print("Установлен: " + agent.Installed)
+
+agent.Start()
+print("Состояние: " + agent.State)
+
+wait(1500)
+
+agent.Stop()
+agent.Uninstall()
+print("После удаления: " + agent.State)
+print("")
+
+// Служба системы — тот же код, другой тип.
+Services.Service sys = new Services.Service(
+    "DemoSystemService",
+    "служба системы",
+    Services.ServiceLevel.SystemProcess)
+
+print("Тип: " + sys.LevelName)
+print("Нужен администратор: " + sys.NeedsAdmin)
+
+if (sys.NeedsAdmin && Services.IsAdmin == false) {
+    print("Запустите студию от администратора, чтобы поставить такую службу.")
+} else {
+    sys.Program(Files.Join(Files.ProjectDir(), "worker.bat"))
+    sys.Install()
+    print(sys.State)
+    sys.Uninstall()
+}
+
+print("")
+print("В автозапуске пользователя: " + Services.List())

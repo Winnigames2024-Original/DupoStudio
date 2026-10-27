@@ -41,6 +41,17 @@ jobs:
 
           if ($kb -lt 250) { throw "Подозрительно мало — всего $kb КБ" }
 
+      - name: Проверить фоновый сервис студии
+        shell: pwsh
+        run: |
+          $exe = "DupoStudio/bin/Release/net48/DupoStudio.exe"
+          $p = Start-Process $exe -ArgumentList "--agent","--once" -Wait -PassThru -NoNewWindow
+          if ($p.ExitCode -ne 0) { throw "Агент вернул $($p.ExitCode)" }
+
+          $log = Join-Path $env:LOCALAPPDATA "DupoStudio\agent\agent.log"
+          if (-not (Test-Path $log)) { throw "Агент не завёл журнал" }
+          Get-Content $log
+
       - name: Проверить утилиты командной строки
         shell: pwsh
         run: |
@@ -61,6 +72,9 @@ jobs:
 
           & "tools/DupoLang.exe" --check "Projects/ResourcesDemo/main.dupolang"
           if ($LASTEXITCODE -ne 0) { throw "ResourcesDemo не разобрался" }
+
+          & "tools/DupoLang.exe" --check "Projects/ServiceDemo/main.dupolang"
+          if ($LASTEXITCODE -ne 0) { throw "ServiceDemo не разобрался" }
 
           & "tools/DupoBuild.exe" --info "tools/HelloWeb.exe"
           if ($LASTEXITCODE -ne 0) { throw "DupoBuild.exe --info вернул $LASTEXITCODE" }
