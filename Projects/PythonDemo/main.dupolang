@@ -1,0 +1,40 @@
+// PythonDemo — DupoLang готовит данные, Python их считает.
+// Запуск: F5 в студии или DupoHost.exe main.dupolang
+using Dupo.Python
+
+print("=== Dupo.Python ===")
+print("")
+
+if (Python.IsInstalled == false) {
+    print("Python не найден — ставлю переносимый...")
+    Python.Install()
+}
+
+print("Python:        " + Python.Version)
+print("Переносимый:   " + str(Python.Portable))
+print("Интерпретатор: " + Python.ExePath)
+print("")
+
+// Короткая строка кода — удобно для проверок на ходу.
+print("-- строка кода --")
+Python.Code("print('привет из Python')")
+print("")
+
+// Синтаксис проверяется до запуска: ошибка видна сразу, а не в середине.
+print("-- проверка файла --")
+Python.Check("src/stats.py")
+print("")
+
+// Запуск файла с аргументами: всё, что он печатает, попадает в консоль.
+print("-- запуск с аргументами --")
+Python.Run("src/stats.py", "2 3 5 8 13 21")
+print("")
+
+// Пакеты ставятся в свой site-packages, системный Python не трогаем:
+//     Python.Pip("install requests")
+//     print(Python.Packages())
+//
+// А один .exe из скрипта делается так (доставит PyInstaller):
+//     Python.Build("src/stats.py", "build")
+
+print("Готово.")

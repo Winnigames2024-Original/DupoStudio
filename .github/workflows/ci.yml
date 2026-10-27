@@ -94,8 +94,19 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "CsDemo не собрался" }
           if (-not (Test-Path "Projects/CsDemo/build/CsDemo.exe")) { throw "Dupo.CSharp не выдал exe" }
 
+          & "tools/DupoLang.exe" --check "Projects/PythonDemo/main.dupolang"
+          if ($LASTEXITCODE -ne 0) { throw "PythonDemo не разобрался" }
+
           & "tools/DupoBuild.exe" --info "tools/HelloWeb.exe"
           if ($LASTEXITCODE -ne 0) { throw "DupoBuild.exe --info вернул $LASTEXITCODE" }
+
+      - name: Проверить Dupo.Python
+        shell: pwsh
+        run: |
+          # На бегунке Python уже есть — модуль должен взять системный,
+          # ничего не скачивая.
+          & "tools/DupoHost.exe" "Projects/PythonDemo/main.dupolang"
+          if ($LASTEXITCODE -ne 0) { throw "PythonDemo не выполнился" }
 
       - name: Выложить сборку
         uses: actions/upload-artifact@v4

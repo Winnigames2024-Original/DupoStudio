@@ -1,0 +1,9 @@
+# Свойства проекта Dupo Studio
+name=PythonDemo
+product=Dupo Studio
+author=Winnigames2024
+version=1.0
+description=Python и DupoLang вместе
+namespace=PythonDemo
+javapackage=com.winnigames2024.pythondemo
+singleexe=1
