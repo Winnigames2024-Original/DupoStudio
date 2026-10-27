@@ -18,8 +18,9 @@ namespace DupoStudio
         ToolStripMenuItem miProject, miProperties, miResources;
         ToolStripMenuItem miView, miViewExplorer, miViewProps, miViewToolbox, miViewConsole;
         ToolStripMenuItem miViewAssistant, miViewDockAll;
+        ToolStripMenuItem miTheme;
         ToolStripMenuItem miNewForm, miOpenForm, miFormCode, miNewWinForm, miToggleDesigner;
-        ToolStripMenuItem miHelp, miAbout;
+        ToolStripMenuItem miHelp, miAbout, miUpdate;
 
         ToolStrip toolMain;
         ToolStripButton tbNew, tbOpen, tbSave, tbRun, tbStop, tbPhp, tbBrowser, tbExport;
@@ -116,12 +117,15 @@ namespace DupoStudio
             miViewProps.CheckOnClick = true;
             miViewToolbox.CheckOnClick = true;
             miViewConsole.CheckOnClick = true;
+            miTheme = ThemeMenu.Build(this, delegate { Recolored(); });
+
             miView.DropDownItems.AddRange(new ToolStripItem[] {
                 miViewExplorer, miViewProps, miViewToolbox, miViewConsole, miViewAssistant,
-                new ToolStripSeparator(), miViewDockAll });
+                new ToolStripSeparator(), miTheme, miViewDockAll });
 
             miHelp = new ToolStripMenuItem("Справка");
             miAbout = new ToolStripMenuItem("О программе");
+            miUpdate = new ToolStripMenuItem("Проверить обновления");
 
             toolMain = new ToolStrip();
             tbNew = new ToolStripButton("Новый");
@@ -172,7 +176,8 @@ namespace DupoStudio
             miProject.DropDownItems.AddRange(new ToolStripItem[] {
                 miProperties, miResources, new ToolStripSeparator(),
                 miNewWinForm, miNewForm, miOpenForm, miToggleDesigner, miFormCode });
-            miHelp.DropDownItems.Add(miAbout);
+            miHelp.DropDownItems.AddRange(new ToolStripItem[] {
+                miUpdate, new ToolStripSeparator(), miAbout });
 
             miNewProject.ShortcutKeys = Keys.Control | Keys.N;
             miNewJava.ShortcutKeys = Keys.Control | Keys.Shift | Keys.N;

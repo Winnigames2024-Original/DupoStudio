@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Релизы — Dupo Studio</title>
+<meta name="description" content="Скачать Dupo Studio: установщик без прав администратора.">
+<link rel="icon" href="../assets/logo.svg">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="../" style="text-decoration:none;color:inherit">
+      <img src="../assets/logo.svg" alt=""> Dupo Studio
+    </a>
+    <nav>
+      <a href="../#features">Возможности</a>
+      <a href="../#lang">Язык</a>
+      <a href="../#dapp">Формат .dapp</a>
+      <a href="./" class="active">Релизы</a>
+      <a href="https://github.com/Winnigames2024-Original/DupoStudio">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero" style="padding-bottom:28px">
+  <div class="wrap">
+    <div class="badge">Требуется <b>.NET Framework 4.8</b> — уже есть в Windows 10 и 11</div>
+    <h1 style="font-size:clamp(34px,5vw,50px)">Скачать</h1>
+    <p class="lead" style="margin-bottom:0">
+      Установщик ставит студию без прав администратора: сборщик командной строки
+      едет внутри него и распаковывается сам, интернет не нужен.
+      Остальные файлы и исходники — на странице версии.
+    </p>
+  </div>
+</div>
+
+<section style="padding-top:28px">
+  <div class="wrap">
+
+    <div id="live"></div>
+
+    <div id="fallback">
+      <div class="rel latest">
+        <div class="rel-head">
+          <h3>Последний выпуск</h3>
+          <span class="tag new">установщик</span>
+        </div>
+        <p class="date">Список подтянется с GitHub</p>
+        <div class="assets">
+          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/releases/latest/download/DupoStudioSetup.exe">
+            <span class="ic">🖥</span><span class="nm">DupoStudioSetup.exe</span>
+            <span class="meta">установщик</span>
+          </a>
+          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/releases">
+            <span class="ic">📦</span><span class="nm">Остальные файлы и исходники</span>
+            <span class="meta">на GitHub</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:28px">
+      Antivirus иногда настораживается на свежесобранный неподписанный exe
+      с дописанным хвостом. Для массовой раздачи стоит подписать сертификатом.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Dupo Studio · Winnigames2024-Original</div>
+    <div><a href="https://github.com/Winnigames2024-Original/DupoStudio">GitHub</a></div>
+  </div>
+</footer>
+
+<script>
+// Список выпусков берём прямо с GitHub. Здесь показываем только установщик,
+// всё остальное — на странице версии: /release/<версия>/
+(function () {
+  var REPO = "Winnigames2024-Original/DupoStudio";
+
+  function size(bytes) {
+    if (!bytes) return "";
+    var mb = bytes / 1048576;
+    return mb >= 1 ? mb.toFixed(1) + " МБ" : Math.round(bytes / 1024) + " КБ";
+  }
+
+  function when(iso) {
+    try {
+      return new Date(iso).toLocaleDateString("ru-RU",
+        { day: "numeric", month: "long", year: "numeric" });
+    } catch (e) { return ""; }
+  }
+
+  function esc(s) {
+    return String(s || "").replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  // Минимальная разметка: `код`, **жирный** и ссылки.
+  function md(s) {
+    return s
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+      .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>');
+  }
+
+  // v0.0.3 → 0.0.3: в адресе страницы версии буквы v нет.
+  function slug(tag) {
+    return String(tag || "").replace(/^v/i, "");
+  }
+
+  fetch("https://api.github.com/repos/" + REPO + "/releases")
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (list) {
+      if (!list || !list.length) return;
+
+      var html = list.map(function (rel, i) {
+        var page = "../release/" + encodeURIComponent(slug(rel.tag_name)) + "/";
+
+        var assets = (rel.assets || [])
+          .filter(function (a) { return /Setup\.exe$/i.test(a.name); })
+          .map(function (a) {
+            return '<a class="asset" href="' + esc(a.browser_download_url) + '">' +
+                   '<span class="ic">🖥</span>' +
+                   '<span class="nm">' + esc(a.name) + '</span>' +
+                   '<span class="meta">' + size(a.size) + '</span></a>';
+          });
+
+        assets.push('<a class="asset" href="' + page + '">' +
+          '<span class="ic">📦</span><span class="nm">Остальные файлы и исходники</span>' +
+          '<span class="meta">страница версии</span></a>');
+
+        var body = esc(rel.body || "").trim().split("\n")
+          .filter(function (s) {
+            var t = s.trim();
+            return t && !/^#{1,6}\s/.test(t) && !/^\|/.test(t) && t !== "```";
+          })
+          .slice(0, 8)
+          .map(function (s) { return "<li>" + md(s.replace(/^[-*]\s*/, "")) + "</li>"; })
+          .join("");
+
+        return '<div class="rel' + (i === 0 ? ' latest' : '') + '">' +
+          '<div class="rel-head"><h3><a href="' + page + '" style="color:inherit">' +
+          esc(rel.tag_name) + '</a></h3>' +
+          (i === 0 ? '<span class="tag new">последняя</span>' : '') +
+          (rel.prerelease ? '<span class="tag">предварительная</span>' : '') +
+          '</div><p class="date">' + when(rel.published_at) + '</p>' +
+          (body ? '<ul>' + body + '</ul>' : '') +
+          '<div class="assets">' + assets.join("") + '</div></div>';
+      }).join("");
+
+      document.getElementById("live").innerHTML = html;
+      document.getElementById("fallback").style.display = "none";
+    })
+    .catch(function () { /* оставляем запасную карточку */ });
+})();
+</script>
+
+</body>
+</html>

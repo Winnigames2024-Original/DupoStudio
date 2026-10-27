@@ -1,0 +1,401 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Net;
+using System.Text;
+using System.Text.RegularExpressions;
+using DupoLang;
+
+namespace DupoUpdate
+{
+    /// <summary>Что нашлось на GitHub.</summary>
+    public class Found
+    {
+        public string Tag = "";
+        public string Version = "";
+        public string Notes = "";
+        public readonly Dictionary<string, string> Assets =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        public bool Has(string name) { return Assets.ContainsKey(name); }
+    }
+
+    /// <summary>
+    /// Обновление приложения с GitHub. Порядок такой: сначала само
+    /// приложение, затем новый update.exe откладывается рядом, потом
+    /// инструменты, и уже на выходе обновлятор меняет себя — работающий
+    /// файл перезаписать нельзя.
+    /// </summary>
+    public class Updater
+    {
+        public const string Repo = "Winnigames2024-Original/DupoStudio";
+
+        public Action<string> Log = delegate { };
+        public Action<int> Progress = delegate { };
+
+        readonly UninstallData data;
+        readonly string dir;
+
+        /// <summary>Файл, который заменит update.exe после выхода.</summary>
+        public string Staged { get; private set; }
+
+        public Updater(UninstallData info, string folder)
+        {
+            data = info;
+            dir = folder;
+        }
+
+        // ------------------------------------------------------------------
+        // что доступно
+        // ------------------------------------------------------------------
+
+        /// <summary>Последний выпуск с GitHub.</summary>
+        public static Found Latest()
+        {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+            string json;
+            using (var wc = new WebClient())
+            {
+                wc.Headers.Add("User-Agent", "DupoStudio-update");
+                wc.Encoding = Encoding.UTF8;
+                json = wc.DownloadString("https://api.github.com/repos/" + Repo + "/releases/latest");
+            }
+
+            var found = new Found();
+
+            var tag = Regex.Match(json, "\"tag_name\"\\s*:\\s*\"([^\"]+)\"");
+            if (tag.Success) found.Tag = tag.Groups[1].Value;
+            found.Version = Regex.Replace(found.Tag, "^v", "", RegexOptions.IgnoreCase);
+
+            var body = Regex.Match(json, "\"body\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"");
+            if (body.Success) found.Notes = Unescape(body.Groups[1].Value);
+
+            foreach (Match m in Regex.Matches(json,
+                "\"name\"\\s*:\\s*\"([^\"]+)\"[^{}]*?\"browser_download_url\"\\s*:\\s*\"([^\"]+)\""))
+            {
+                found.Assets[m.Groups[1].Value] = m.Groups[2].Value;
+            }
+
+            // Запасной разбор: если порядок полей другой, берём по ссылке.
+            if (found.Assets.Count == 0)
+            {
+                foreach (Match m in Regex.Matches(json, "\"browser_download_url\"\\s*:\\s*\"([^\"]+)\""))
+                {
+                    string url = m.Groups[1].Value;
+                    found.Assets[url.Substring(url.LastIndexOf('/') + 1)] = url;
+                }
+            }
+
+            return found;
+        }
+
+        static string Unescape(string s)
+        {
+            return (s ?? "").Replace("\\r\\n", "\n").Replace("\\n", "\n")
+                            .Replace("\\\"", "\"").Replace("\\\\", "\\");
+        }
+
+        /// <summary>Сравнение версий: 1 — слева новее, -1 — справа, 0 — одинаково.</summary>
+        public static int Compare(string a, string b)
+        {
+            int[] x = Parts(a), y = Parts(b);
+            for (int i = 0; i < Math.Max(x.Length, y.Length); i++)
+            {
+                int l = i < x.Length ? x[i] : 0;
+                int r = i < y.Length ? y[i] : 0;
+                if (l != r) return l > r ? 1 : -1;
+            }
+            return 0;
+        }
+
+        static int[] Parts(string v)
+        {
+            return Regex.Matches(v ?? "", @"\d+").Cast<Match>()
+                        .Select(m => int.Parse(m.Value)).ToArray();
+        }
+
+        /// <summary>Версия, которая стоит сейчас.</summary>
+        public string Installed
+        {
+            get { return data != null && data.AppVersion.Length > 0 ? data.AppVersion : "0.0.0"; }
+        }
+
+        // ------------------------------------------------------------------
+        // обновление
+        // ------------------------------------------------------------------
+
+        /// <summary>Обновить всё по порядку. Возвращает true, если что-то поменялось.</summary>
+        public bool Run(Found found)
+        {
+            if (found == null) throw new InvalidOperationException("нечего ставить");
+
+            bool changed = false;
+
+            // 1. Само приложение.
+            changed |= App(found);
+            Progress(45);
+
+            // 2. Новый обновлятор откладываем рядом — подменим себя на выходе.
+            changed |= Self(found);
+            Progress(60);
+
+            // 3. Инструменты сборки.
+            changed |= Tools(found);
+            Progress(85);
+
+            // 4. Заодно свежий uninstall.exe, если он есть в выпуске.
+            changed |= Companion(found, "uninstall.exe");
+            Progress(95);
+
+            if (changed) Stamp(found);
+            Progress(100);
+
+            return changed;
+        }
+
+        bool App(Found found)
+        {
+            string name = string.IsNullOrEmpty(data.MainExe) ? "DupoStudio.exe" : Path.GetFileName(data.MainExe);
+
+            string url;
+            if (!found.Assets.TryGetValue(name, out url))
+            {
+                Log("В выпуске нет " + name + " — приложение не трогаю.");
+                return false;
+            }
+
+            string target = Path.Combine(dir, name);
+            Log("Качаю " + name + "...");
+
+            string temp = Download(url);
+            try
+            {
+                Wait(target);
+                Backup(target);
+                File.Copy(temp, target, true);
+                Log("Приложение обновлено: " + name);
+                return true;
+            }
+            finally { Clean(temp); }
+        }
+
+        bool Self(Found found)
+        {
+            string url;
+            if (!found.Assets.TryGetValue("update.exe", out url))
+            {
+                Log("В выпуске нет update.exe — обновлятор остаётся прежним.");
+                return false;
+            }
+
+            Log("Качаю update.exe...");
+            string temp = Download(url);
+
+            string staged = Path.Combine(dir, "update.new");
+            try
+            {
+                File.Copy(temp, staged, true);
+                Staged = staged;
+                Log("Новый update.exe отложен — встанет на место при выходе.");
+                return true;
+            }
+            finally { Clean(temp); }
+        }
+
+        bool Tools(Found found)
+        {
+            string url;
+            if (!found.Assets.TryGetValue("BuildTools.zip", out url))
+            {
+                Log("В выпуске нет BuildTools.zip — инструменты не трогаю.");
+                return false;
+            }
+
+            Log("Качаю BuildTools.zip...");
+            string temp = Download(url);
+
+            string tools = Path.Combine(dir, "runtime", "tools");
+
+            try
+            {
+                Directory.CreateDirectory(tools);
+
+                using (var zip = ZipFile.OpenRead(temp))
+                {
+                    foreach (var entry in zip.Entries)
+                    {
+                        if (entry.Length == 0 && entry.Name.Length == 0) continue;
+
+                        string to = Path.Combine(tools, entry.FullName.Replace('/', Path.DirectorySeparatorChar));
+                        Directory.CreateDirectory(Path.GetDirectoryName(to));
+
+                        Wait(to);
+                        entry.ExtractToFile(to, true);
+                    }
+                }
+
+                Log("Инструменты обновлены: " + tools);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log("Инструменты не обновились: " + ex.Message);
+                return false;
+            }
+            finally { Clean(temp); }
+        }
+
+        bool Companion(Found found, string name)
+        {
+            string url;
+            if (!found.Assets.TryGetValue(name, out url)) return false;
+
+            string target = Path.Combine(dir, name);
+            if (!File.Exists(target)) return false;
+
+            Log("Качаю " + name + "...");
+            string temp = Download(url);
+
+            try
+            {
+                Wait(target);
+                File.Copy(temp, target, true);
+                Log(name + " обновлён");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log(name + " не обновился: " + ex.Message);
+                return false;
+            }
+            finally { Clean(temp); }
+        }
+
+        /// <summary>Записать новую версию в uninstall.dll.</summary>
+        void Stamp(Found found)
+        {
+            try
+            {
+                if (data == null || found.Version.Length == 0) return;
+
+                data.AppVersion = found.Version;
+                data.Extra["updated"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+                data.Save(dir);
+
+                Log("Версия записана: " + found.Version);
+            }
+            catch (Exception ex) { Log("Версию записать не вышло: " + ex.Message); }
+        }
+
+        // ------------------------------------------------------------------
+        // мелочи
+        // ------------------------------------------------------------------
+
+        string Download(string url)
+        {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+            string temp = Path.Combine(Path.GetTempPath(), "dupo-up-" + Guid.NewGuid().ToString("N"));
+            using (var wc = new WebClient())
+            {
+                wc.Headers.Add("User-Agent", "DupoStudio-update");
+                wc.DownloadFile(url, temp);
+            }
+            return temp;
+        }
+
+        static void Clean(string path)
+        {
+            try { if (path != null && File.Exists(path)) File.Delete(path); }
+            catch { }
+        }
+
+        /// <summary>Отодвинуть старый файл: вдруг он ещё занят.</summary>
+        static void Backup(string path)
+        {
+            try
+            {
+                if (!File.Exists(path)) return;
+
+                string old = path + ".old";
+                if (File.Exists(old)) File.Delete(old);
+                File.Move(path, old);
+            }
+            catch { }
+        }
+
+        /// <summary>Подождать, пока файл освободится — вдруг приложение ещё закрывается.</summary>
+        static void Wait(string path)
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                try
+                {
+                    if (!File.Exists(path)) return;
+                    using (File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { }
+                    return;
+                }
+                catch { System.Threading.Thread.Sleep(250); }
+            }
+        }
+
+        /// <summary>
+        /// Подменить себя новым файлом после выхода: сами себя переписать
+        /// не можем, поэтому поручаем короткой команде.
+        /// </summary>
+        public void ApplySelf()
+        {
+            if (string.IsNullOrEmpty(Staged) || !File.Exists(Staged)) return;
+
+            try
+            {
+                string self = Process.GetCurrentProcess().MainModule.FileName;
+
+                string bat = Path.Combine(Path.GetTempPath(), "dupo-self-" + Guid.NewGuid().ToString("N") + ".cmd");
+                var sb = new StringBuilder();
+                sb.AppendLine("@echo off");
+                sb.AppendLine("ping -n 3 127.0.0.1 >nul");
+                sb.AppendLine("move /y \"" + Staged + "\" \"" + self + "\" >nul");
+                sb.AppendLine("del \"%~f0\"");
+
+                File.WriteAllText(bat, sb.ToString(), Encoding.GetEncoding(866));
+
+                var psi = new ProcessStartInfo("cmd.exe", "/c \"" + bat + "\"");
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+                Process.Start(psi);
+            }
+            catch { }
+        }
+
+        /// <summary>Закрыть приложение, если оно запущено, — иначе файл занят.</summary>
+        public void StopApp()
+        {
+            string name = string.IsNullOrEmpty(data.MainExe)
+                ? "DupoStudio"
+                : Path.GetFileNameWithoutExtension(data.MainExe);
+
+            try
+            {
+                foreach (var p in Process.GetProcessesByName(name))
+                {
+                    using (p)
+                    {
+                        Log("Закрываю " + name + "...");
+                        try { p.CloseMainWindow(); } catch { }
+                        if (!p.WaitForExit(4000))
+                        {
+                            try { p.Kill(); } catch { }
+                            p.WaitForExit(2000);
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+    }
+}

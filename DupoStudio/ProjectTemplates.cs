@@ -550,12 +550,8 @@ namespace DupoStudio
         /// <summary>Выбор существующей папки проекта.</summary>
         public static string Choose(IWin32Window owner, string startDir)
         {
-            using (var dlg = new FolderBrowserDialog())
-            {
-                dlg.Description = "Выберите папку проекта";
-                dlg.SelectedPath = Directory.Exists(startDir) ? startDir : ProjectsDir;
-                return dlg.ShowDialog(owner) == DialogResult.OK ? dlg.SelectedPath : null;
-            }
+            return Folders.Ask(owner, "Выберите папку проекта",
+                               Directory.Exists(startDir) ? startDir : ProjectsDir);
         }
     }
 }

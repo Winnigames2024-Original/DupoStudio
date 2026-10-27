@@ -108,6 +108,32 @@ namespace DupoStudio
             return editor;
         }
 
+        /// <summary>Перекрасить открытые вкладки — после смены темы.</summary>
+        public void Repaint()
+        {
+            BackColor = Theme.Back;
+            Tabs.BackColor = Theme.Panel;
+
+            foreach (TabPage page in Tabs.TabPages)
+            {
+                page.BackColor = Theme.Back;
+
+                foreach (Control c in page.Controls)
+                {
+                    var host = c as EditorHost;
+                    if (host == null) continue;
+
+                    host.BackColor = Theme.Back;
+                    host.Editor.BackColor = Theme.Back;
+                    host.Editor.ForeColor = Theme.Text;
+                    host.Editor.HighlightNow();
+                    host.Invalidate(true);
+                }
+            }
+
+            Invalidate(true);
+        }
+
         public void SaveActive()
         {
             Save(Active);

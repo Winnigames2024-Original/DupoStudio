@@ -333,12 +333,8 @@ namespace DupoStudio
 
         void Browse()
         {
-            using (var dlg = new FolderBrowserDialog())
-            {
-                dlg.Description = "Где создать проект";
-                if (Directory.Exists(Location)) dlg.SelectedPath = Location;
-                if (dlg.ShowDialog(this) == DialogResult.OK) locationBox.Text = dlg.SelectedPath;
-            }
+            string dir = Folders.Ask(this, "Где создать проект", Location);
+            if (dir != null) locationBox.Text = dir;
         }
 
         void Accept()

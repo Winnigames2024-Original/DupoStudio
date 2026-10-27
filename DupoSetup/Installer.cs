@@ -58,10 +58,17 @@ namespace DupoSetup
 
                 MoveBundledTools(targetDir, written);
 
-                // установщик кладём рядом — им же потом удалять
+                // uninstall.exe едет в начинке: это отдельная маленькая программа.
+                // Если его там не оказалось, кладём копию установщика — она умеет
+                // удалять по ключу /uninstall.
                 string uninstaller = Path.Combine(targetDir, "uninstall.exe");
-                File.Copy(DappBundle.SelfPath(), uninstaller, true);
-                written.Add("uninstall.exe");
+                bool ownUninstaller = File.Exists(uninstaller);
+
+                if (!ownUninstaller)
+                {
+                    File.Copy(DappBundle.SelfPath(), uninstaller, true);
+                    written.Add("uninstall.exe");
+                }
                 Progress(70);
 
                 string exe = string.IsNullOrEmpty(info.MainExe)
@@ -87,7 +94,12 @@ namespace DupoSetup
                 Progress(95);
 
                 File.WriteAllLines(ListFile(targetDir), written.ToArray(), new UTF8Encoding(false));
-                Register(targetDir, uninstaller);
+
+                // Рядом с uninstall.exe кладём uninstall.dll: что за программа,
+                // куда поставлена и что за ней убирать.
+                WriteData(targetDir, written);
+
+                Register(targetDir, uninstaller, ownUninstaller);
 
                 Progress(100);
                 Log("Готово: " + targetDir);
@@ -249,7 +261,36 @@ namespace DupoSetup
             }
         }
 
-        void Register(string targetDir, string uninstaller)
+        /// <summary>uninstall.dll — данные об установленном приложении.</summary>
+        void WriteData(string targetDir, List<string> written)
+        {
+            try
+            {
+                var data = new UninstallData();
+                data.Name = info.Name;
+                data.AppVersion = info.Version;
+                data.Publisher = info.Publisher;
+                data.Folder = info.Folder;
+                data.AppId = info.AppId;
+                data.MainExe = info.MainExe;
+                data.Shortcut = info.Shortcut;
+                data.Dir = targetDir;
+                data.InstalledAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+                data.Associations.AddRange(info.Associations);
+                data.Files.AddRange(written);
+
+                data.Extra["startmenu"] = StartMenuPath();
+                data.Extra["desktop"] = DesktopPath();
+                data.Extra["progid"] = "DupoStudio" + DappPackage.SafeName(info.Folder);
+                data.Extra["list"] = ListFile(targetDir);
+
+                data.Save(targetDir);
+                Log("Записан " + UninstallData.FileName);
+            }
+            catch (Exception ex) { Log("Данные об установке не записались: " + ex.Message); }
+        }
+
+        void Register(string targetDir, string uninstaller, bool ownUninstaller)
         {
             try
             {
@@ -261,7 +302,8 @@ namespace DupoSetup
                     k.SetValue("DisplayVersion", info.Version);
                     k.SetValue("Publisher", info.Publisher);
                     k.SetValue("InstallLocation", targetDir);
-                    k.SetValue("UninstallString", "\"" + uninstaller + "\" /uninstall");
+                    k.SetValue("UninstallString",
+                               "\"" + uninstaller + "\"" + (ownUninstaller ? "" : " /uninstall"));
                     k.SetValue("NoModify", 1, RegistryValueKind.DWord);
                     k.SetValue("NoRepair", 1, RegistryValueKind.DWord);
 

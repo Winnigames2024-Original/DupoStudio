@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>7.3</LangVersion>
+    <AssemblyName>uninstall</AssemblyName>
+    <RootNamespace>DupoUninstall</RootNamespace>
+    <CodePage>65001</CodePage>
+    <Version>0.0.3</Version>
+    <Product>Dupo Studio</Product>
+    <Company>Winnigames2024</Company>
+    <Authors>Winnigames2024</Authors>
+    <Copyright>© 2026 Winnigames2024</Copyright>
+    <ApplicationIcon>..\DupoStudio\Resources\dupo.ico</ApplicationIcon>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+
+  <!-- Язык вкомпилирован: нужен формат uninstall.dll и мелочи вроде путей.
+       Отдельной DupoLang.dll рядом с uninstall.exe быть не должно. -->
+  <ItemGroup>
+    <Compile Include="..\DupoLang\**\*.cs"
+             Exclude="..\DupoLang\bin\**\*.cs;..\DupoLang\obj\**\*.cs"
+             LinkBase="DupoLang" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+  </ItemGroup>
+
+</Project>

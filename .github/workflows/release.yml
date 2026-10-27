@@ -83,6 +83,18 @@ jobs:
 
           New-Item -ItemType Directory -Force "payload" | Out-Null
           Copy-Item "DupoStudio.exe" "payload/DupoStudio.exe"
+
+          # uninstall.exe и update.exe едут рядом с приложением: первый
+          # читает uninstall.dll, который пишет установщик, второй обновляет
+          # приложение, себя и инструменты.
+          $uninstall = "DupoUninstall/bin/Release/net48/uninstall.exe"
+          $update = "DupoUpdate/bin/Release/net48/update.exe"
+          if (-not (Test-Path $uninstall)) { throw "Нет $uninstall" }
+          if (-not (Test-Path $update)) { throw "Нет $update" }
+          Copy-Item $uninstall "payload/uninstall.exe"
+          Copy-Item $update "payload/update.exe"
+          Copy-Item $uninstall "uninstall.exe"
+          Copy-Item $update "update.exe"
           Copy-Item "Projects" "payload/Projects" -Recurse -Force
           Copy-Item "README.md","CHANGELOG.md","LICENSE" "payload" -Force -ErrorAction SilentlyContinue
 
@@ -124,7 +136,8 @@ jobs:
           $inside = & "tools/DupoBuild.exe" --info "DupoStudioSetup.exe" | Out-String
           Write-Host $inside
 
-          foreach ($must in @("DupoStudio.exe", "buildtools/DupoBuild.exe", "buildtools/DupoLang.exe")) {
+          foreach ($must in @("DupoStudio.exe", "uninstall.exe", "update.exe",
+                              "buildtools/DupoBuild.exe", "buildtools/DupoLang.exe")) {
             if (-not $inside.Contains($must)) { throw "В установщике нет $must" }
           }
 
@@ -136,3 +149,5 @@ jobs:
             DupoStudioSetup.exe
             DupoStudio.exe
             BuildTools.zip
+            update.exe
+            uninstall.exe

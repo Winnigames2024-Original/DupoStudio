@@ -17,6 +17,9 @@ namespace DupoStudio
         /// <summary>Не спрашивать про автозапуск при закрытии проекта.</summary>
         public static bool DontAsk;
 
+        /// <summary>Название темы оформления.</summary>
+        public static string ThemeName = "Тёмная";
+
         public static string FilePath
         {
             get
@@ -32,7 +35,17 @@ namespace DupoStudio
         {
             try
             {
-                if (!File.Exists(FilePath)) return;
+                if (File.Exists(FilePath)) Read();
+            }
+            catch { }
+
+            Theme.Apply(ThemeName);
+        }
+
+        static void Read()
+        {
+            try
+            {
 
                 foreach (string raw in File.ReadAllLines(FilePath, Encoding.UTF8))
                 {
@@ -45,6 +58,7 @@ namespace DupoStudio
 
                     if (key == "autostart") Autostart = value;
                     else if (key == "dontask") DontAsk = value == "1" || value == "true";
+                    else if (key == "theme" && value.Length > 0) ThemeName = value;
                 }
             }
             catch { }
@@ -60,6 +74,7 @@ namespace DupoStudio
                 var lines = new List<string>();
                 lines.Add("autostart=" + (Autostart ?? ""));
                 lines.Add("dontask=" + (DontAsk ? "1" : "0"));
+                lines.Add("theme=" + (ThemeName ?? ""));
 
                 File.WriteAllLines(FilePath, lines.ToArray(), new UTF8Encoding(false));
             }

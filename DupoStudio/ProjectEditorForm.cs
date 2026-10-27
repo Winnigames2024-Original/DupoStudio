@@ -110,6 +110,7 @@ namespace DupoStudio
             miProperties.Click += delegate { ShowProperties(); };
             miResources.Click += delegate { OpenResources(); };
             miAbout.Click += delegate { About(); };
+            miUpdate.Click += delegate { CheckUpdates(); };
 
             tbNew.Click += delegate { NewProject(); };
             tbOpen.Click += delegate { OpenProjectDialog(); };
@@ -567,6 +568,40 @@ namespace DupoStudio
                 sb.AppendLine("Открыт файл: " + Path.GetFileName(ed.FilePath));
 
             return sb.ToString();
+        }
+
+        /// <summary>После смены темы подновляем то, что рисуется само.</summary>
+        /// <summary>Запустить update.exe — он лежит рядом со студией.</summary>
+        void CheckUpdates()
+        {
+            string beside = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "update.exe");
+
+            if (!File.Exists(beside))
+            {
+                Log("update.exe рядом не нашёлся — он кладётся установщиком.", Theme.Dim);
+                Log("Скачать можно со страницы выпуска на GitHub.", Theme.Dim);
+                return;
+            }
+
+            try
+            {
+                Process.Start(beside);
+                Log("Запущено обновление.", Theme.Info);
+            }
+            catch (Exception ex) { Log("Обновление не запустилось: " + ex.Message, Theme.Err); }
+        }
+
+        void Recolored()
+        {
+            BackColor = Theme.Back;
+            ForeColor = Theme.Text;
+            statusMain.BackColor = Theme.Status;
+            lblProject.BackColor = Theme.Accent;
+            menuMain.BackColor = Theme.Chrome;
+            toolMain.BackColor = Theme.Chrome;
+
+            editors.Repaint();
+            Invalidate(true);
         }
 
         void TogglePane(string title)

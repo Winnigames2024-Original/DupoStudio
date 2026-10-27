@@ -70,8 +70,45 @@ namespace DupoSetup
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new SetupForm(info, payload, uninstall));
+
+            if (uninstall)
+            {
+                // Обычно удаляет отдельный uninstall.exe; сюда попадают
+                // старые записи в реестре, поэтому оставляем простой путь.
+                return Remove(info);
+            }
+
+            Application.Run(new SetupForm(info, payload));
             return 0;
+        }
+
+        /// <summary>Запасное удаление: спросить и убрать.</summary>
+        static int Remove(SetupInfo info)
+        {
+            string dir = info.DefaultDir;
+
+            var r = MessageBox.Show(
+                "Вы действительно хотите удалить " + info.Name + " и все его компоненты?" +
+                Environment.NewLine + Environment.NewLine + dir,
+                "Удаление — " + info.Name,
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (r != DialogResult.Yes) return 0;
+
+            var installer = new Installer(info);
+            try
+            {
+                installer.Uninstall(dir);
+                MessageBox.Show(info.Name + " удалён с вашего компьютера.",
+                                "Удаление", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Не всё удалилось: " + ex.Message,
+                                "Удаление", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return 3;
+            }
         }
 
         static bool Has(string[] args, string flag)

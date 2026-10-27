@@ -72,6 +72,9 @@ namespace DupoStudio
                 newWeb, newJava, open, new ToolStripSeparator(),
                 miAutostartOff, new ToolStripSeparator(), exit });
 
+            var view = new ToolStripMenuItem("Вид");
+            view.DropDownItems.Add(ThemeMenu.Build(this, delegate { Recolored(); }));
+
             var help = new ToolStripMenuItem("Справка");
             var about = new ToolStripMenuItem("О программе");
             about.Click += delegate
@@ -86,13 +89,24 @@ namespace DupoStudio
             };
             help.DropDownItems.Add(about);
 
-            menu.Items.AddRange(new ToolStripItem[] { file, help });
+            menu.Items.AddRange(new ToolStripItem[] { file, view, help });
             menu.BackColor = Theme.Chrome;
             menu.ForeColor = Theme.Text;
             menu.Padding = new Padding(6, 2, 0, 2);
             menu.Font = new Font("Segoe UI", 9f);
             menu.Renderer = new ToolStripProfessionalRenderer(new DarkColors());
             Theme.PaintMenu(menu.Items);
+        }
+
+        /// <summary>После смены темы подпись «недавние» строится заново.</summary>
+        void Recolored()
+        {
+            BackColor = Theme.Back;
+            ForeColor = Theme.Text;
+            menu.BackColor = Theme.Chrome;
+            menu.ForeColor = Theme.Text;
+            welcome.BackColor = Theme.Back;
+            RefreshRecent();
         }
 
         void RefreshRecent()
