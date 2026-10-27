@@ -37,13 +37,9 @@ jobs:
           Compress-Archive -Path "$dist/*" -DestinationPath "DupoStudio-$v-win-net48.zip" -Force
           Get-ChildItem *.zip | Format-Table Name, Length
 
+      # Описание не передаём: если релиз уже создан вручную, его текст остаётся как был,
+      # а экшен только прикладывает архив со сборкой.
       - name: Опубликовать релиз
         uses: softprops/action-gh-release@v2
         with:
           files: DupoStudio-*.zip
-          generate_release_notes: true
-          body: |
-            Собранная студия — в архиве `DupoStudio-${{ github.ref_name }}-win-net48.zip`.
-            Полные исходники — в `Source code (zip)` и `Source code (tar.gz)` ниже.
-
-            Нужен .NET Framework 4.8 (уже есть в Windows 10 и 11).
