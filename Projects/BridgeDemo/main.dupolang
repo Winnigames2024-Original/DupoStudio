@@ -1,0 +1,20 @@
+// BridgeDemo — C# зовёт блоки def из .dupolang
+using Dupo.CSharp
+using Dupo.Lang
+using Dupo.System.Files
+
+print("Блоки в logic.dupolang: " + Lang.Functions("logic.dupolang"))
+print("")
+
+// То же самое доступно и из DupoLang
+print(Lang.ExecuteFrom("logic.dupolang", "Привет", "Dupo Studio"))
+print("")
+
+print("Собираю C#, который зовёт Dupo.Lang.ExecuteFrom...")
+string exe = CSharp.Build("src", "build/BridgeDemo.exe")
+
+// Файл со блоками должен лежать рядом с exe
+Files.Copy("logic.dupolang", "build/logic.dupolang")
+
+print("")
+CSharp.Launch(exe, "")

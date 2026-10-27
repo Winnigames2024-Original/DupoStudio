@@ -1,0 +1,25 @@
+// logic.dupolang — блоки def, которые зовёт C#
+using Dupo.Text
+using Dupo.Data
+
+def Привет(имя) {
+    return "Привет, " + имя + "! Это DupoLang " + "0.0.2"
+}
+
+def Сумма(a, b) {
+    return a + b
+}
+
+def Громко(текст) {
+    return Text.Upper(Text.Trim(текст))
+}
+
+def Сведения() {
+    var m = map("язык", "DupoLang", "продукт", "Dupo Studio", "автор", "Winnigames2024")
+    return m
+}
+
+// func и def — одно и то же
+func Повтор(текст, сколько) {
+    return Text.Repeat(текст, сколько)
+}

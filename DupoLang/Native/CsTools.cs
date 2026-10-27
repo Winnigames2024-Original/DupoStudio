@@ -123,6 +123,11 @@ namespace DupoLang
             foreach (string r in (refs ?? "").Split(';', ',', ' '))
                 if (r.Trim().Length > 0 && !all.Contains(r.Trim())) all.Add(r.Trim());
 
+            // Если код зовёт Dupo.Lang.ExecuteFrom, сам подставляем DupoLang.dll
+            // и кладём её рядом с результатом, иначе приложение не запустится.
+            string lib = NeedsDupoLang(sources) ? DupoRuntime.Library : "";
+            if (lib.Length > 0 && !all.Contains(lib)) all.Add(lib);
+
             var args = new StringBuilder();
             args.Append("/nologo /optimize+ /warn:1 /utf8output");
             args.Append(" /target:").Append(kind.ToLowerInvariant());
@@ -139,8 +144,43 @@ namespace DupoLang
             if (!File.Exists(target))
                 throw new InvalidOperationException("сборка не удалась — " + Path.GetFileName(target) + " не появился");
 
+            if (lib.Length > 0) CopyBeside(lib, target);
+
             Log("Готово: " + target + "  (" + new FileInfo(target).Length / 1024 + " КБ)");
             return target;
+        }
+
+        /// <summary>Нужна ли ссылка на DupoLang.dll — смотрим, что в исходниках.</summary>
+        static bool NeedsDupoLang(List<string> sources)
+        {
+            foreach (string f in sources)
+            {
+                string text;
+                try { text = File.ReadAllText(f); }
+                catch { continue; }
+
+                if (text.IndexOf("DupoLang", StringComparison.Ordinal) >= 0) return true;
+                if (text.IndexOf("Dupo.Lang", StringComparison.Ordinal) >= 0) return true;
+            }
+            return false;
+        }
+
+        static void CopyBeside(string lib, string target)
+        {
+            try
+            {
+                string dir = Path.GetDirectoryName(target);
+                if (string.IsNullOrEmpty(dir)) return;
+
+                string copy = Path.Combine(dir, Path.GetFileName(lib));
+                if (string.Equals(copy, lib, StringComparison.OrdinalIgnoreCase)) return;
+
+                if (!File.Exists(copy) || new FileInfo(copy).Length != new FileInfo(lib).Length)
+                    File.Copy(lib, copy, true);
+
+                Log("Рядом положена " + Path.GetFileName(lib));
+            }
+            catch (Exception ex) { Log("Библиотеку не удалось положить рядом: " + ex.Message); }
         }
 
         /// <summary>Собрать и сразу запустить.</summary>

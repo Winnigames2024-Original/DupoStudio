@@ -26,6 +26,32 @@ namespace DupoLang
             }
         }
 
+        /// <summary>
+        /// Путь к DupoLang.dll на диске. Студия держит библиотеку ресурсом
+        /// внутри exe и подставляет сюда распакованную копию, чтобы проекты
+        /// на C# могли на неё ссылаться.
+        /// </summary>
+        public static string LibraryPath;
+
+        /// <summary>DupoLang.dll, на которую можно сослаться при сборке C#. Пусто — нет такой.</summary>
+        public static string Library
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(LibraryPath) && File.Exists(LibraryPath)) return LibraryPath;
+
+                try
+                {
+                    string own = typeof(DupoRuntime).Assembly.Location;
+                    if (!string.IsNullOrEmpty(own) && File.Exists(own)) return own;
+                }
+                catch { }
+
+                string beside = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DupoLang.dll");
+                return File.Exists(beside) ? beside : "";
+            }
+        }
+
         public static string Resolve(string path)
         {
             if (string.IsNullOrEmpty(path)) return ProjectDir;

@@ -31,7 +31,7 @@ namespace DupoLang
     {
         public static readonly HashSet<string> Keywords = new HashSet<string>(StringComparer.Ordinal)
         {
-            "import", "using", "var", "new", "func", "return", "if", "else",
+            "import", "using", "var", "new", "func", "def", "return", "if", "else",
             "while", "for", "true", "false", "null", "break", "continue"
         };
 

@@ -14,6 +14,7 @@ namespace DupoStudio
             // сам запуск вынесен в отдельный метод, иначе библиотека понадобится
             // ещё при входе в Main.
             EmbeddedRuntime.Install();
+            Bind();
 
             // Фоновый режим: окон нет, работаем как сервис.
             if (args != null)
@@ -25,6 +26,18 @@ namespace DupoStudio
                     }
 
             Start(args);
+        }
+
+        /// <summary>
+        /// Подсказываем библиотеке, где её копия на диске: проектам на C#
+        /// нужна настоящая DupoLang.dll, чтобы звать Dupo.Lang.ExecuteFrom.
+        /// Вынесено отдельно — обращение к DupoLang прямо в Main потребовало бы
+        /// библиотеку ещё до того, как встанет перехватчик.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Bind()
+        {
+            try { DupoLang.DupoRuntime.LibraryPath = EmbeddedRuntime.LibraryPath(); } catch { }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

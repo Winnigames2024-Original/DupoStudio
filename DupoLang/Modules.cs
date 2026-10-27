@@ -15,7 +15,7 @@ namespace DupoLang
         {
             "Dupo.Web", "Dupo.App", "Dupo.Java", "Dupo.Tools", "Dupo.Resources",
             "Dupo.Services", "Dupo.CSharp", "Dupo.Cpp",
-            "Dupo.Data", "Dupo.Json", "Dupo.Text",
+            "Dupo.Data", "Dupo.Json", "Dupo.Text", "Dupo.Lang",
             "Dupo.System.Files", "Dupo.System", "Dupo.IO", "Dupo.Sys"
         };
 
@@ -36,6 +36,7 @@ namespace DupoLang
                 case "Dupo.Data": return DataNs(interp);
                 case "Dupo.Json": return JsonNs(interp);
                 case "Dupo.Text": return TextNs(interp);
+                case "Dupo.Lang": return LangNs(interp);
                 case "Dupo.System.Files": return Files(interp);
                 case "Dupo.System": return SystemNs(interp);
             }
@@ -195,6 +196,16 @@ namespace DupoLang
             var ns = new NativeNamespace("Cpp");
             ns.Target = CppTools.Instance;
             ns.Backing = typeof(CppTools);
+            return ns;
+        }
+
+        // ---------------- Dupo.Lang ----------------
+        static NativeNamespace LangNs(Interp interp)
+        {
+            LangBridge.Log = interp.Print;
+
+            var ns = new NativeNamespace("Lang");
+            ns.Backing = typeof(LangBridge);
             return ns;
         }
 

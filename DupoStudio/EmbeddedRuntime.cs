@@ -81,6 +81,29 @@ namespace DupoStudio
             return target;
         }
 
+        /// <summary>
+        /// Путь к DupoLang.dll на диске. Нужен, когда проект на C# ссылается
+        /// на библиотеку, чтобы звать Dupo.Lang.ExecuteFrom — из ресурса
+        /// компилятору её не подсунуть, поэтому распаковываем.
+        /// </summary>
+        public static string LibraryPath()
+        {
+            string beside = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DupoLang.dll");
+            if (File.Exists(beside)) return beside;
+
+            byte[] data = Read(LangResource);
+            if (data == null) return null;
+
+            string dir = Path.Combine(Path.GetTempPath(), "dupo-runtime");
+            Directory.CreateDirectory(dir);
+            string target = Path.Combine(dir, "DupoLang.dll");
+
+            if (!File.Exists(target) || new FileInfo(target).Length != data.Length)
+                File.WriteAllBytes(target, data);
+
+            return target;
+        }
+
         /// <summary>Есть ли рантайм внутри exe (для надписи «о программе»).</summary>
         public static bool Bundled
         {

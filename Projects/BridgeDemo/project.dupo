@@ -1,0 +1,9 @@
+# Свойства проекта Dupo Studio
+name=BridgeDemo
+product=Dupo Studio
+author=Winnigames2024
+version=1.0
+description=Связка C# и DupoLang через Dupo.Lang.ExecuteFrom
+namespace=BridgeDemo
+javapackage=com.winnigames2024.bridgedemo
+singleexe=1

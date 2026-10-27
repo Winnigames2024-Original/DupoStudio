@@ -57,7 +57,8 @@ namespace DupoLang
                 return new ImportStmt { Module = sb.ToString(), Line = line };
             }
 
-            if (IsKw("func")) return ParseFunc();
+            // def — то же, что func: так привычнее тем, кто пришёл из Python.
+            if (IsKw("func") || IsKw("def")) return ParseFunc();
             if (IsKw("if")) return ParseIf();
             if (IsKw("while")) return ParseWhile();
             if (IsKw("for")) return ParseFor();

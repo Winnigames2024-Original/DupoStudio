@@ -62,6 +62,9 @@ namespace DupoStudio
                 "Format", "Fill", "Match", "Find", "ReplaceAll",
                 "ToNumber", "Round", "ToBase64", "FromBase64", "UrlEncode", "UrlDecode" } },
             { "Json", new[] { "Parse", "Read", "Text", "Pretty", "Save" } },
+            { "Lang", new[] {
+                "ExecuteFrom", "Functions", "HasFunction", "Arity",
+                "RunFile", "RunCode", "Check", "Reset", "Version" } },
             { "Data", new[] { "Map", "Json", "Text" } },
             { "Data.Map", new[] {
                 "Get", "Set", "Has", "Remove", "Clear", "Copy",
@@ -84,7 +87,7 @@ namespace DupoStudio
             "print", "println", "str", "num", "int", "round", "abs", "type", "len",
             "wait", "now", "random", "list", "push", "upper", "lower", "split",
             "Web", "Files", "Java", "Tools", "App", "IO", "Sys", "Resources", "Services",
-            "CSharp", "Cpp", "Text", "Json", "Data",
+            "CSharp", "Cpp", "Text", "Json", "Data", "Lang", "def",
             "map", "keys", "values", "has"
         };
 

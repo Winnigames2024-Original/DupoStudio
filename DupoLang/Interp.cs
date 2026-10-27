@@ -71,6 +71,16 @@ namespace DupoLang
             foreach (var s in program) if (!(s is FuncStmt)) Exec(s, Globals);
         }
 
+        /// <summary>
+        /// Объявить блоки и подключить модули, но не выполнять код верхнего
+        /// уровня. Нужно, когда из C# вызывают один def из файла.
+        /// </summary>
+        public void Declare(List<Stmt> program)
+        {
+            foreach (var s in program)
+                if (s is ImportStmt || s is FuncStmt) Exec(s, Globals);
+        }
+
         /// <summary>Закрывает всё, что запустил скрипт (серверы и т.п.).</summary>
         public void Shutdown()
         {

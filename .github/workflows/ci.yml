@@ -59,6 +59,7 @@ jobs:
           Copy-Item "DupoBuild/bin/Release/net48/DupoBuild.exe" "tools/DupoBuild.exe"
           Copy-Item "DupoCs/bin/Release/net48/DupoLang.exe"     "tools/DupoLang.exe"
           Copy-Item "DupoHost/bin/Release/net48/DupoHost.exe"   "tools/DupoHost.exe"
+          Copy-Item "DupoLang/bin/Release/net48/DupoLang.dll"  "tools/DupoLang.dll" -ErrorAction SilentlyContinue
 
           & "tools/DupoLang.exe" --check "Projects/HelloWeb/main.dupolang"
           if ($LASTEXITCODE -ne 0) { throw "DupoLang.exe не проверил пример" }
@@ -78,6 +79,10 @@ jobs:
 
           & "tools/DupoHost.exe" "Projects/DataDemo/main.dupolang"
           if ($LASTEXITCODE -ne 0) { throw "DataDemo не выполнился" }
+
+          & "tools/DupoHost.exe" "Projects/BridgeDemo/main.dupolang"
+          if ($LASTEXITCODE -ne 0) { throw "BridgeDemo не выполнился" }
+          if (-not (Test-Path "Projects/BridgeDemo/build/BridgeDemo.exe")) { throw "Связка C# и DupoLang не собралась" }
 
           & "tools/DupoHost.exe" "Projects/CsDemo/main.dupolang"
           if ($LASTEXITCODE -ne 0) { throw "CsDemo не собрался" }
