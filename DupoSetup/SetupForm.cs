@@ -117,7 +117,7 @@ namespace DupoSetup
             assoc.FlatStyle = FlatStyle.Flat;
             assoc.Visible = !uninstallMode && info.Associations.Count > 0;
 
-            tools.Text = "Скачать сборщик командной строки (BuildTools) с GitHub";
+            tools.Text = "Обновить сборщик BuildTools с GitHub (без сети возьмётся из установщика)";
             tools.Checked = true;
             tools.SetBounds(30, 212, 480, 22);
             tools.ForeColor = Dim;

@@ -10,7 +10,7 @@
     <RootNamespace>DupoCs</RootNamespace>
     <CodePage>65001</CodePage>
     <ApplicationIcon>..\DupoStudio\Resources\dupo.ico</ApplicationIcon>
-    <Version>0.0.3</Version>
+    <Version>0.0.4</Version>
     <Product>DupoLang to C#</Product>
     <Company>Winnigames2024</Company>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

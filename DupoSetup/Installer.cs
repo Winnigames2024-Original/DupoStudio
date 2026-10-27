@@ -81,7 +81,7 @@ namespace DupoSetup
 
                 if (associate && exe != null) Associate(exe);
 
-                if (withTools) DownloadTools(targetDir, written);
+                if (withTools) RefreshTools(targetDir, written);
                 Progress(95);
 
                 File.WriteAllLines(ListFile(targetDir), written.ToArray(), new UTF8Encoding(false));
@@ -94,13 +94,17 @@ namespace DupoSetup
         }
 
         /// <summary>
-        /// Сборщик командной строки не лежит внутри установщика: он качается
-        /// с GitHub по ссылке на свежий выпуск, поэтому один архив подходит
-        /// любой версии. Нет сети — ставим без него, установка не срывается.
+        /// Сборщик командной строки лежит внутри установщика и уже распакован
+        /// вместе с остальным. Сеть нужна только чтобы заменить его на свежий —
+        /// нет интернета, работает то, что приехало с установщиком.
         /// </summary>
-        void DownloadTools(string targetDir, List<string> written)
+        void RefreshTools(string targetDir, List<string> written)
         {
             string toolsDir = Path.Combine(targetDir, "runtime", "tools");
+            bool haveLocal = File.Exists(Path.Combine(toolsDir, "DupoBuild.exe"));
+
+            if (haveLocal) Log("BuildTools распакованы из установщика.");
+
             string tmp = Path.Combine(Path.GetTempPath(), "dupo-tools-" + Guid.NewGuid().ToString("N") + ".zip");
 
             try
@@ -108,7 +112,7 @@ namespace DupoSetup
                 ServicePointManager.SecurityProtocol =
                     SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
 
-                Log("Качаю BuildTools с GitHub...");
+                Log("Проверяю, нет ли свежих BuildTools...");
 
                 using (var wc = new WebClient())
                 {
@@ -120,19 +124,18 @@ namespace DupoSetup
                 Directory.CreateDirectory(toolsDir);
                 ZipFile.ExtractToDirectory(tmp, toolsDir);
 
-                int count = 0;
                 foreach (string file in Directory.GetFiles(toolsDir, "*", SearchOption.AllDirectories))
                 {
-                    written.Add(Rel(targetDir, file));
-                    count++;
+                    string rel = Rel(targetDir, file);
+                    if (!written.Contains(rel)) written.Add(rel);
                 }
 
-                Log("BuildTools на месте: " + count + " файл(ов)");
+                Log("BuildTools обновлены.");
             }
             catch (Exception ex)
             {
-                Log("BuildTools не скачались (" + ex.Message + ").");
-                Log("Ничего страшного: студия предложит скачать их позже.");
+                if (haveLocal) Log("Свежих не взял (" + ex.Message + ") — работают те, что внутри.");
+                else Log("BuildTools не скачались (" + ex.Message + ").");
             }
             finally { try { File.Delete(tmp); } catch { } }
         }

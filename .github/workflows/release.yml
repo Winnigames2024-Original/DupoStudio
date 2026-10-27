@@ -44,6 +44,37 @@ jobs:
 
           if ($kb -lt 250) { throw "Подозрительно мало — всего $kb КБ" }
 
+      - name: Собрать утилиты командной строки
+        shell: pwsh
+        run: |
+          # DupoBuild ищет рантайм рядом с собой, поэтому кладём их вместе.
+          New-Item -ItemType Directory -Force "tools" | Out-Null
+          Copy-Item "DupoBuild/bin/Release/net48/DupoBuild.exe" "tools/DupoBuild.exe"
+          Copy-Item "DupoCs/bin/Release/net48/DupoLang.exe"     "tools/DupoLang.exe"
+          Copy-Item "DupoHost/bin/Release/net48/DupoHost.exe"   "tools/DupoHost.exe"
+          Copy-Item "DupoRun/bin/Release/net48/DupoRun.exe"     "tools/DupoRun.exe"
+          Copy-Item "DupoLang/bin/Release/net48/DupoLang.dll"   "tools/DupoLang.dll"
+
+          # Проверяем, что утилиты вообще работают.
+          & "tools/DupoLang.exe" --check "Projects/HelloWeb/main.dupolang"
+          if ($LASTEXITCODE -ne 0) { throw "DupoLang.exe не проверил пример" }
+
+          & "tools/DupoLang.exe" "Projects/HelloWeb/main.dupolang" "tools/sample.cs" "namespace=Sample"
+          if (-not (Test-Path "tools/sample.cs")) { throw "DupoLang.exe не выдал C#" }
+          Write-Host "--- начало сгенерированного C# ---"
+          Get-Content "tools/sample.cs" -TotalCount 20
+          Remove-Item "tools/sample.cs"
+
+          & "tools/DupoBuild.exe" "Projects/HelloWeb" "tools/HelloWeb.exe" "name=HelloWeb"
+          if ($LASTEXITCODE -ne 0) { throw "DupoBuild.exe вернул $LASTEXITCODE" }
+          if (-not (Test-Path "tools/HelloWeb.exe")) { throw "DupoBuild.exe не собрал exe" }
+          Remove-Item "tools/HelloWeb.exe"
+
+          "${{ github.ref_name }}" | Out-File -FilePath "tools/version.txt" -Encoding utf8 -NoNewline
+
+          Compress-Archive -Path "tools/*" -DestinationPath "BuildTools.zip" -Force
+          Write-Host "BuildTools.zip собран"
+
       - name: Собрать установщик
         shell: pwsh
         run: |
@@ -54,6 +85,11 @@ jobs:
           Copy-Item "DupoStudio.exe" "payload/DupoStudio.exe"
           Copy-Item "Projects" "payload/Projects" -Recurse -Force
           Copy-Item "README.md","CHANGELOG.md","LICENSE" "payload" -Force -ErrorAction SilentlyContinue
+
+          # Утилиты едут прямо внутри установщика: без сети они просто
+          # распакуются из него и сразу заработают.
+          New-Item -ItemType Directory -Force "payload/runtime/tools" | Out-Null
+          Copy-Item "tools/*" "payload/runtime/tools" -Recurse -Force
 
           $setup = "DupoSetup/bin/Release/net48/DupoSetup.exe"
           if (-not (Test-Path $setup)) { throw "Нет $setup" }
@@ -81,39 +117,6 @@ jobs:
           Write-Host "DupoSetup.exe — $baseKb КБ, с начинкой — $madeKb КБ"
 
           if ($madeKb -le $baseKb + 50) { throw "Начинка не приложилась: было $baseKb КБ, стало $madeKb КБ" }
-
-      - name: Собрать утилиты командной строки
-        shell: pwsh
-        run: |
-          # DupoBuild ищет рантайм рядом с собой, поэтому кладём их вместе.
-          New-Item -ItemType Directory -Force "tools" | Out-Null
-          Copy-Item "DupoBuild/bin/Release/net48/DupoBuild.exe" "tools/DupoBuild.exe"
-          Copy-Item "DupoCs/bin/Release/net48/DupoLang.exe"     "tools/DupoLang.exe"
-          Copy-Item "DupoHost/bin/Release/net48/DupoHost.exe"   "tools/DupoHost.exe"
-          Copy-Item "DupoRun/bin/Release/net48/DupoRun.exe"     "tools/DupoRun.exe"
-          Copy-Item "DupoLang/bin/Release/net48/DupoLang.dll"   "tools/DupoLang.dll"
-
-          # Проверяем, что утилиты вообще работают.
-          & "tools/DupoLang.exe" --check "Projects/HelloWeb/main.dupolang"
-          if ($LASTEXITCODE -ne 0) { throw "DupoLang.exe не проверил пример" }
-
-          & "tools/DupoLang.exe" "Projects/HelloWeb/main.dupolang" "tools/sample.cs" "namespace=Sample"
-          if (-not (Test-Path "tools/sample.cs")) { throw "DupoLang.exe не выдал C#" }
-          Write-Host "--- начало сгенерированного C# ---"
-          Get-Content "tools/sample.cs" -TotalCount 20
-          Remove-Item "tools/sample.cs"
-
-          & "tools/DupoBuild.exe" "Projects/HelloWeb" "tools/HelloWeb.exe" "name=HelloWeb"
-          if ($LASTEXITCODE -ne 0) { throw "DupoBuild.exe вернул $LASTEXITCODE" }
-          if (-not (Test-Path "tools/HelloWeb.exe")) { throw "DupoBuild.exe не собрал exe" }
-          Remove-Item "tools/HelloWeb.exe"
-
-          # Архив один на все версии: студия берёт его по ссылке
-          # releases/latest/download/BuildTools.zip.
-          "${{ github.ref_name }}" | Out-File -FilePath "tools/version.txt" -Encoding utf8 -NoNewline
-
-          Compress-Archive -Path "tools/*" -DestinationPath "BuildTools.zip" -Force
-          Write-Host "BuildTools.zip собран"
 
       # Описание не передаём: текст релиза, написанный вручную, остаётся как был.
       - name: Опубликовать релиз
