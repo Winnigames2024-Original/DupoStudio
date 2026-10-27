@@ -25,7 +25,7 @@ namespace DupoStudio
         static readonly Dictionary<string, string[]> Members =
             new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
         {
-            { "Web", new[] { "Server", "Open", "Get", "Download", "Hosts" } },
+            { "Web", new[] { "Server", "Open", "Get", "Download" } },
             { "Files", new[] {
                 "Create", "Write", "Append", "AppendLine", "Read", "ReadLines", "ReplaceIn",
                 "Contains", "Exists", "Delete", "Copy", "Move", "Rename", "Size", "Modified",
@@ -62,10 +62,12 @@ namespace DupoStudio
                 "Format", "Fill", "Match", "Find", "ReplaceAll",
                 "ToNumber", "Round", "ToBase64", "FromBase64", "UrlEncode", "UrlDecode" } },
             { "Json", new[] { "Parse", "Read", "Text", "Pretty", "Save" } },
-            { "Hosts", new[] {
-                "FilePath", "TempDir", "DataDir", "Exists", "Count", "Source",
-                "Create", "Reload", "Resolve", "Knows", "List", "Rewrite",
-                "Add", "Remove", "Open", "Text" } },
+            { "Forms", new[] {
+                "Form", "Open", "Message", "Ask" } },
+            { "Forms.Form", new[] {
+                "Open", "Add", "Button", "Label", "TextBox", "On", "Get", "Set",
+                "Checked", "Push", "Clear", "SetImage", "Enable", "ShowItem",
+                "Show", "Close", "Title", "Width", "Height", "Names" } },
             { "Lang", new[] {
                 "ExecuteFrom", "Functions", "HasFunction", "Arity",
                 "RunFile", "RunCode", "Check", "Reset", "Version" } },
@@ -91,7 +93,7 @@ namespace DupoStudio
             "print", "println", "str", "num", "int", "round", "abs", "type", "len",
             "wait", "now", "random", "list", "push", "upper", "lower", "split",
             "Web", "Files", "Java", "Tools", "App", "IO", "Sys", "Resources", "Services",
-            "CSharp", "Cpp", "Text", "Json", "Data", "Lang", "Hosts", "def",
+            "CSharp", "Cpp", "Text", "Json", "Data", "Lang", "Forms", "def",
             "map", "keys", "values", "has"
         };
 

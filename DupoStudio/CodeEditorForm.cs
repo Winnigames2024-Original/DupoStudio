@@ -134,6 +134,28 @@ namespace DupoStudio
             Invalidate(true);
         }
 
+        /// <summary>Перечитать с диска всё, что открыто и не правилось.</summary>
+        public void ReloadAll()
+        {
+            foreach (TabPage page in Tabs.TabPages)
+                foreach (Control c in page.Controls)
+                {
+                    var host = c as EditorHost;
+                    if (host == null) continue;
+
+                    var ed = host.Editor;
+                    if (ed.FilePath == null || !File.Exists(ed.FilePath)) continue;
+                    if (ed.Dirty) continue;
+
+                    try
+                    {
+                        ed.Text = File.ReadAllText(ed.FilePath, Encoding.UTF8);
+                        ed.HighlightNow();
+                    }
+                    catch { }
+                }
+        }
+
         public void SaveActive()
         {
             Save(Active);

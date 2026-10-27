@@ -26,8 +26,20 @@ namespace DupoStudio
 
         readonly List<ChatLine> lines = new List<ChatLine>();
 
+        readonly Panel actionBar = new Panel();
+        readonly Label actionText = new Label();
+        readonly Button apply = new Button();
+        readonly Button skip = new Button();
+        List<FileAction> pending = new List<FileAction>();
+
         string projectDir;
         bool busy;
+
+        /// <summary>Папка открытого проекта — помощник правит файлы только в ней.</summary>
+        public Func<string> ProjectDir = delegate { return null; };
+
+        /// <summary>Файлы изменились — студии пора обновить дерево и вкладки.</summary>
+        public event EventHandler<string> FilesChanged;
 
         /// <summary>Куда вставлять код из ответа.</summary>
         public Action<string> InsertCode;
@@ -40,6 +52,7 @@ namespace DupoStudio
             BackColor = Theme.Panel;
             BuildBar();
             BuildView();
+            BuildActions();
             BuildInput();
         }
 
@@ -86,6 +99,118 @@ namespace DupoStudio
             view.DetectUrls = true;
             view.HideSelection = false;
             Controls.Add(view);
+        }
+
+        void BuildActions()
+        {
+            actionBar.Dock = DockStyle.Bottom;
+            actionBar.Height = 64;
+            actionBar.BackColor = Theme.Chrome;
+            actionBar.Visible = false;
+            actionBar.Padding = new Padding(8, 6, 8, 6);
+
+            actionText.Dock = DockStyle.Top;
+            actionText.Height = 30;
+            actionText.ForeColor = Theme.Text;
+            actionBar.Controls.Add(actionText);
+
+            apply.Text = "Применить";
+            apply.Dock = DockStyle.Left;
+            apply.Width = 110;
+            apply.FlatStyle = FlatStyle.Flat;
+            apply.BackColor = Theme.Accent;
+            apply.ForeColor = Color.White;
+            apply.FlatAppearance.BorderColor = Theme.Accent;
+            apply.Click += delegate { ApplyPending(); };
+
+            skip.Text = "Не надо";
+            skip.Dock = DockStyle.Left;
+            skip.Width = 100;
+            skip.FlatStyle = FlatStyle.Flat;
+            skip.BackColor = Theme.Chrome;
+            skip.ForeColor = Theme.Text;
+            skip.FlatAppearance.BorderColor = Theme.Border;
+            skip.Click += delegate { Forget(); };
+
+            var row = new Panel();
+            row.Dock = DockStyle.Fill;
+            row.BackColor = Theme.Chrome;
+            row.Controls.Add(skip);
+            row.Controls.Add(apply);
+            actionBar.Controls.Add(row);
+            row.BringToFront();
+
+            Controls.Add(actionBar);
+        }
+
+        /// <summary>Показать предложенные правки.</summary>
+        void Offer(List<FileAction> actions)
+        {
+            pending = actions ?? new List<FileAction>();
+
+            if (pending.Count == 0) { actionBar.Visible = false; return; }
+
+            var names = pending.Select(a => a.Title).Take(4).ToList();
+            if (pending.Count > names.Count) names.Add("и ещё " + (pending.Count - names.Count));
+
+            actionText.Text = "Предлагаю " + pending.Count + " правк(и): " + string.Join(", ", names.ToArray());
+            actionBar.Visible = true;
+            actionBar.BringToFront();
+        }
+
+        void Forget()
+        {
+            pending = new List<FileAction>();
+            actionBar.Visible = false;
+            Add("помощник", "Хорошо, ничего не трогаю.");
+            Store();
+        }
+
+        void ApplyPending()
+        {
+            string dir = Safe(ProjectDir);
+            if (string.IsNullOrEmpty(dir))
+            {
+                Add("помощник", "Проект не открыт — править нечего.");
+                return;
+            }
+
+            var done = new List<string>();
+            var failed = new List<string>();
+            var touched = new List<string>();
+
+            foreach (var action in pending)
+            {
+                try
+                {
+                    done.Add(AssistantActions.Apply(action, dir));
+                    touched.Add(action.Full(dir));
+                }
+                catch (Exception ex) { failed.Add(action.Path + ": " + ex.Message); }
+            }
+
+            pending = new List<FileAction>();
+            actionBar.Visible = false;
+
+            var sb = new StringBuilder();
+            if (done.Count > 0)
+            {
+                sb.AppendLine("**Сделано**");
+                foreach (string d in done) sb.AppendLine("• " + d);
+            }
+            if (failed.Count > 0)
+            {
+                if (sb.Length > 0) sb.AppendLine();
+                sb.AppendLine("**Не вышло**");
+                foreach (string f in failed) sb.AppendLine("• " + f);
+            }
+            if (done.Count > 0) sb.AppendLine(Environment.NewLine + "Прежние файлы сохранены в .dupo/backup.");
+
+            Add("помощник", sb.ToString());
+            Store();
+
+            var h = FilesChanged;
+            if (h != null) h(this, touched.Count > 0 ? touched[0] : "");
         }
 
         void BuildInput()
@@ -207,6 +332,11 @@ namespace DupoStudio
             Add("помощник", "_думаю..._");
 
             string context = Safe(Context);
+
+            string dir = Safe(ProjectDir);
+            if (!string.IsNullOrEmpty(dir))
+                context += Environment.NewLine + "Содержимое файлов:" + Environment.NewLine +
+                           AssistantActions.Contents(dir, 24000);
             var history = lines.Take(Math.Max(0, lines.Count - 2)).ToList();
 
             var t = new Thread(delegate ()
@@ -250,8 +380,16 @@ namespace DupoStudio
 
         void Reply(string text)
         {
-            Add("помощник", text);
+            var actions = AssistantActions.Parse(text);
+            string clean = actions.Count > 0 ? AssistantActions.Strip(text) : text;
+
+            if (clean.Trim().Length == 0)
+                clean = "Подготовил правки — посмотрите список ниже.";
+
+            Add("помощник", clean);
             Store();
+
+            Offer(actions);
         }
 
         void Add(string who, string text)
@@ -471,6 +609,13 @@ namespace DupoStudio
             };
             Controls.Add(ok);
 
+            var install = new Button();
+            install.Text = "Поставить Ollama";
+            install.Bounds = new Rectangle(18, 258, 150, 30);
+            Flat(install);
+            install.Click += delegate { Install(install); };
+            Controls.Add(install);
+
             var off = new Button();
             off.Text = "Отключить";
             off.Bounds = new Rectangle(214, 258, 104, 30);
@@ -501,6 +646,65 @@ namespace DupoStudio
             endpoint.Enabled = manual;
             key.Enabled = manual;
             Probe();
+        }
+
+        /// <summary>Поставить Ollama и скачать модель — одной кнопкой.</summary>
+        void Install(Button button)
+        {
+            button.Enabled = false;
+            ollama.Checked = true;
+            ollamaState.ForeColor = Theme.Dim;
+            ollamaState.Text = "Начинаю...";
+
+            string wanted = model.Text.Trim();
+
+            var t = new Thread(delegate ()
+            {
+                string problem = null;
+
+                try
+                {
+                    Say(Assistant.InstallOllama(Say));
+                    Assistant.StartOllama();
+
+                    if (Assistant.OllamaModels().Count == 0)
+                        Say(Assistant.PullModel(wanted, Say));
+                }
+                catch (Exception ex) { problem = ex.Message; }
+
+                string fail = problem;
+                try
+                {
+                    BeginInvoke(new Action(delegate
+                    {
+                        button.Enabled = true;
+
+                        if (fail != null)
+                        {
+                            ollamaState.ForeColor = Theme.Warn;
+                            ollamaState.Text = "Не вышло: " + fail;
+                            return;
+                        }
+
+                        Probe();
+                    }));
+                }
+                catch { }
+            });
+
+            t.IsBackground = true;
+            t.Start();
+        }
+
+        void Say(string text)
+        {
+            if (InvokeRequired)
+            {
+                try { BeginInvoke(new Action<string>(Say), text); }
+                catch { }
+                return;
+            }
+            ollamaState.Text = text;
         }
 
         void Probe()

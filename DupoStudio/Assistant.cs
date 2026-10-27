@@ -235,6 +235,143 @@ namespace DupoStudio
             return res;
         }
 
+        /// <summary>Откуда берётся установщик Ollama.</summary>
+        public const string OllamaSetup = "https://ollama.com/download/OllamaSetup.exe";
+
+        /// <summary>Модель по умолчанию — небольшая и хорошо знает код.</summary>
+        public const string OllamaModel = "qwen2.5-coder:7b";
+
+        /// <summary>Поставлена ли Ollama (ищем ollama.exe там, где её кладёт установщик).</summary>
+        public static string OllamaExe
+        {
+            get
+            {
+                var where = new List<string>();
+
+                try
+                {
+                    where.Add(Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "Programs", "Ollama", "ollama.exe"));
+                    where.Add(Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                        "Ollama", "ollama.exe"));
+                }
+                catch { }
+
+                foreach (string part in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(';'))
+                {
+                    if (part.Trim().Length == 0) continue;
+                    try { where.Add(Path.Combine(part.Trim(), "ollama.exe")); }
+                    catch { }
+                }
+
+                foreach (string p in where)
+                    if (File.Exists(p)) return p;
+
+                return "";
+            }
+        }
+
+        /// <summary>
+        /// Поставить Ollama: качаем установщик с сайта и запускаем его тихо.
+        /// Возвращает пояснение о том, чем всё кончилось.
+        /// </summary>
+        public static string InstallOllama(Action<string> say)
+        {
+            Action<string> tell = say ?? delegate { };
+
+            if (OllamaExe.Length > 0) return "Ollama уже стоит: " + OllamaExe;
+
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+            string file = Path.Combine(Path.GetTempPath(), "OllamaSetup.exe");
+
+            tell("Качаю установщик Ollama...");
+            using (var wc = new WebClient())
+            {
+                wc.Headers.Add("User-Agent", "DupoStudio");
+                wc.DownloadFile(OllamaSetup, file);
+            }
+
+            tell("Запускаю установку — она идёт сама, окон не будет.");
+
+            var psi = new System.Diagnostics.ProcessStartInfo(file, "/VERYSILENT /NORESTART");
+            psi.UseShellExecute = true;
+
+            using (var p = System.Diagnostics.Process.Start(psi))
+            {
+                if (p != null) p.WaitForExit(10 * 60 * 1000);
+            }
+
+            try { File.Delete(file); }
+            catch { }
+
+            return OllamaExe.Length > 0
+                ? "Ollama поставлена: " + OllamaExe
+                : "Установщик отработал, но ollama.exe не нашёлся — возможно, нужен перезапуск.";
+        }
+
+        /// <summary>Скачать модель. Без этого отвечать нечем.</summary>
+        public static string PullModel(string model, Action<string> say)
+        {
+            Action<string> tell = say ?? delegate { };
+
+            string exe = OllamaExe;
+            if (exe.Length == 0) throw new InvalidOperationException("Ollama не установлена");
+
+            string name = (model ?? "").Trim();
+            if (name.Length == 0) name = OllamaModel;
+
+            tell("Качаю модель " + name + " — это несколько гигабайт, наберитесь терпения.");
+
+            var psi = new System.Diagnostics.ProcessStartInfo(exe, "pull " + name);
+            psi.UseShellExecute = false;
+            psi.CreateNoWindow = true;
+            psi.RedirectStandardOutput = true;
+            psi.RedirectStandardError = true;
+            psi.StandardOutputEncoding = Encoding.UTF8;
+            psi.StandardErrorEncoding = Encoding.UTF8;
+
+            using (var p = System.Diagnostics.Process.Start(psi))
+            {
+                string last = "";
+                while (!p.StandardOutput.EndOfStream)
+                {
+                    string line = p.StandardOutput.ReadLine();
+                    if (string.IsNullOrEmpty(line) || line == last) continue;
+                    last = line;
+                    tell(line.Trim());
+                }
+
+                p.WaitForExit(60 * 60 * 1000);
+
+                if (p.ExitCode != 0)
+                    throw new InvalidOperationException(p.StandardError.ReadToEnd().Trim());
+            }
+
+            return "Модель " + name + " готова.";
+        }
+
+        /// <summary>Поднять Ollama, если она стоит, но не запущена.</summary>
+        public static void StartOllama()
+        {
+            if (OllamaAlive) return;
+
+            string exe = OllamaExe;
+            if (exe.Length == 0) return;
+
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo(exe, "serve");
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+                System.Diagnostics.Process.Start(psi);
+                System.Threading.Thread.Sleep(1500);
+            }
+            catch { }
+        }
+
         /// <summary>Спросить Ollama на этом компьютере.</summary>
         static string AskOllama(Online o, string projectContext, List<ChatLine> history, string question)
         {
@@ -370,12 +507,23 @@ namespace DupoStudio
             sb.AppendLine();
             sb.AppendLine("Java: исходники в src, сборка Java.Compile и Java.Jar, JDK ставится Java.Install().");
 
+            sb.AppendLine();
+            sb.AppendLine("Окна можно делать и на самом DupoLang, без C#:");
+            sb.AppendLine("  using Dupo.Forms");
+            sb.AppendLine("  Forms.Form main = Forms.Open(\"Form1.dupoform\")");
+            sb.AppendLine("  main.On(\"button1\", \"Нажали\")  и  main.Show()");
+            sb.AppendLine("Обработчик — обычный блок def; методы из других файлов");
+            sb.AppendLine("берутся через Lang.ExecuteFrom. Ресурсы лежат в папке assets.");
+
             if (!string.IsNullOrEmpty(projectContext))
             {
                 sb.AppendLine();
                 sb.AppendLine("Открытый проект:");
                 sb.AppendLine(projectContext);
             }
+
+            sb.AppendLine();
+            sb.AppendLine(AssistantActions.Rules);
 
             return sb.ToString();
         }
@@ -510,9 +658,9 @@ namespace DupoStudio
             { "Lang", new[] { "ExecuteFrom", "TextFrom", "NumberFrom", "TruthFrom", "Functions",
                               "HasFunction", "Arity", "Run", "Code", "Check", "Output", "Reset", "Version" } },
             { "Json", new[] { "Parse", "Read", "Text", "Pretty", "Save" } },
-            { "Hosts", new[] { "FilePath", "Exists", "Count", "Create", "Reload",
-                               "Resolve", "Knows", "List", "Rewrite", "Add", "Remove",
-                               "Open", "Text" } },
+            { "Forms", new[] { "Form", "Open", "Message", "Ask", "On", "Get", "Set",
+                               "Checked", "Push", "Clear", "SetImage", "Enable",
+                               "ShowItem", "Show", "Close" } },
             { "Text", new[] { "Trim", "Upper", "Lower", "Replace", "Contains", "StartsWith",
                               "EndsWith", "IndexOf", "Cut", "Left", "Right", "Split", "Lines",
                               "Words", "Join", "Repeat", "Reverse", "PadLeft", "PadRight", "Capital",
@@ -865,32 +1013,34 @@ Ctrl+S — сохранить, Ctrl+Space — подсказки."));
 после `Services.Service agent = ...` по `agent.` покажутся члены
 сервиса."));
 
-            t.Add(new Topic("Свой файл имён",
-                "hosts имена домен dupo-dupo имя сайта локальн",
-@"У студии есть свой файл имён — как HOSTS в Windows, но только для
-DupoWebServer и внутренних соединений. Системный файл при этом не трогается.
-
-Лежит он в папке `dupo-Dupo` во временных файлах, а формат тот же:
-
-```
-127.0.0.1    myapp.local
-127.0.0.1    api.dupo
-```
-
-Из кода:
+            t.Add(new Topic("Окна на DupoLang",
+                "forms форма окно dupoform program.dupolang кнопк winforms без c#",
+@"Окно можно собрать целиком на DupoLang — ни папки `src`, ни C# не нужно.
+Форма рисуется конструктором в файл `.dupoform`, а запускает её
+`program.dupolang`:
 
 ```
-using Dupo.Hosts
+using Dupo.Forms
+using Dupo.Lang
 
-Hosts.Create()
-Hosts.Add(""myapp.local"", ""127.0.0.1"")
-print(Hosts.List())
-print(Hosts.Resolve(""myapp.local""))
+Forms.Form main = Forms.Open(""Form1.dupoform"")
+main.On(""button1"", ""Нажали"")
+main.Show()
+
+def Нажали(кто) {
+    string имя = main.Get(""textBox1"")
+    string ответ = Lang.ExecuteFrom(""logic.dupolang"", ""Привет"", имя)
+    main.Set(""label1"", ответ)
+}
 ```
 
-Имена, указывающие на 127.0.0.1, `Web.Server` слушает сам, а `Web.Get`
-и `Web.Download` ходят по ним же. В студии: Инструменты → «Файл имён».
-Работает и в приложениях, собранных студией."));
+Методы из других файлов DupoLang берутся через `Lang.ExecuteFrom` —
+это и есть «другие классы». Картинки и прочие файлы лежат в папке
+**assets** и видны как `Resources.имя`.
+
+У формы есть `Get`, `Set`, `Checked`, `Push`, `Clear`, `SetImage`,
+`Enable`, `ShowItem`, `Close`, а события — `click`, `change`,
+`select` и `close` через `On(имя, событие, блок)`."));
 
             t.Add(new Topic("Список команд", "команд список api справочник всё что умеет", Commands()));
 

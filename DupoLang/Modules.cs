@@ -15,7 +15,7 @@ namespace DupoLang
         {
             "Dupo.Web", "Dupo.App", "Dupo.Java", "Dupo.Tools", "Dupo.Resources",
             "Dupo.Services", "Dupo.CSharp", "Dupo.Cpp",
-            "Dupo.Data", "Dupo.Json", "Dupo.Text", "Dupo.Lang", "Dupo.Hosts",
+            "Dupo.Data", "Dupo.Json", "Dupo.Text", "Dupo.Lang", "Dupo.Forms",
             "Dupo.System.Files", "Dupo.System", "Dupo.IO", "Dupo.Sys"
         };
 
@@ -37,6 +37,9 @@ namespace DupoLang
                 case "Dupo.Json": return JsonNs(interp);
                 case "Dupo.Text": return TextNs(interp);
                 case "Dupo.Lang": return LangNs(interp);
+                case "Dupo.Forms": return FormsNs(interp);
+                // Dupo.Hosts в списке Available не значится намеренно:
+                // модуль есть и работает, но на виду его нет.
                 case "Dupo.Hosts": return HostsNs(interp);
                 case "Dupo.System.Files": return Files(interp);
                 case "Dupo.System": return SystemNs(interp);
@@ -211,6 +214,29 @@ namespace DupoLang
 
             var ns = new NativeNamespace("Hosts");
             ns.Backing = typeof(DupoHosts);
+            return ns;
+        }
+
+        // ---------------- Dupo.Forms ----------------
+        static NativeNamespace FormsNs(Interp interp)
+        {
+            DupoForm.Log = interp.Print;
+
+            // Обработчики на форме — это обычные блоки def в том же файле.
+            DupoForm.Handler = delegate (string name, object[] args)
+            {
+                object fn;
+                if (!interp.Globals.TryGet(name, out fn))
+                {
+                    interp.Print("Блока def '" + name + "' нет");
+                    return null;
+                }
+                return interp.CallValue(fn, args, 0);
+            };
+
+            var ns = new NativeNamespace("Forms");
+            ns.Members["Form"] = new NativeType("Form", typeof(DupoForm));
+            ns.Backing = typeof(DupoForm);
             return ns;
         }
 

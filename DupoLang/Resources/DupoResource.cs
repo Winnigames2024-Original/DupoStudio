@@ -48,11 +48,24 @@ namespace DupoLang
     /// <summary>Папка Resources проекта: читается при подключении модуля.</summary>
     public static class ResourceSet
     {
-        public const string FolderName = "Resources";
+        public const string FolderName = "assets";
+
+        /// <summary>Как папка называлась раньше — старые проекты ещё живы.</summary>
+        public const string OldFolderName = "Resources";
+
+        /// <summary>Папка ресурсов проекта: assets, а если её нет — старая Resources.</summary>
+        static string FolderIn(string projectDir)
+        {
+            string assets = System.IO.Path.Combine(projectDir ?? "", FolderName);
+            if (System.IO.Directory.Exists(assets)) return assets;
+
+            string old = System.IO.Path.Combine(projectDir ?? "", OldFolderName);
+            return System.IO.Directory.Exists(old) ? old : assets;
+        }
 
         public static string Folder
         {
-            get { return System.IO.Path.Combine(DupoRuntime.ProjectDir, FolderName); }
+            get { return FolderIn(DupoRuntime.ProjectDir); }
         }
 
         /// <summary>Имя ресурса — имя файла без расширения, пригодное для кода.</summary>
@@ -94,7 +107,7 @@ namespace DupoLang
         public static List<string> Names(string projectDir)
         {
             var names = new List<string>();
-            string dir = System.IO.Path.Combine(projectDir ?? "", FolderName);
+            string dir = FolderIn(projectDir);
             if (!Directory.Exists(dir)) return names;
 
             foreach (string file in Directory.GetFiles(dir, "*", SearchOption.AllDirectories))

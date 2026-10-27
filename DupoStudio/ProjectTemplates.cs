@@ -327,82 +327,65 @@ namespace DupoStudio
             Save(dir, "main.dupolang", DupoScript(name, "Build", "консольное приложение"));
         }
 
+        /// <summary>
+        /// WinForms на DupoLang: ни папки src, ни C#. Форма лежит в .dupoform,
+        /// а запускает её program.dupolang — он же держит обработчики.
+        /// </summary>
         static void FormsWithDupo(string dir, string name)
         {
-            string ns = Ident(name);
-            string src = Path.Combine(dir, "src");
-            Directory.CreateDirectory(src);
+            string cls = Ident(name);
 
-            var form = new WinFormsForm();
-            form.DesignerPath = Path.Combine(src, "Form1" + WinFormsCode.DesignerSuffix);
-            form.Namespace = ns;
-            form.ClassName = "Form1";
-            form.Title = name;
-            form.ClientSize = new System.Drawing.Size(460, 240);
+            // Форму пишем прямо файлом .dupoform — тем же, что правит конструктор по F7.
+            var layout = new StringBuilder();
+            layout.AppendLine("# Форма Dupo Studio");
+            layout.AppendLine("form " + cls + " " + Q + name + Q + " 460 260");
+            layout.AppendLine("Label label1 " + Q + "Нажмите кнопку — ответит DupoLang" + Q + " 24 24 400 24");
+            layout.AppendLine("TextBox textBox1 " + Q + "мир" + Q + " 24 60 220 24");
+            layout.AppendLine("Button button1 " + Q + "Спросить DupoLang" + Q + " 24 104 200 32");
+            Save(dir, cls + FormDesignerPanel.Extension, layout.ToString());
 
-            var label = new DesignItem();
-            label.Kind = "Label";
-            label.Name = "label1";
-            label.Caption = "Нажмите кнопку — ответит DupoLang";
-            label.Bounds = new System.Drawing.Rectangle(24, 24, 400, 24);
-            form.Items.Add(label);
-
-            var box = new DesignItem();
-            box.Kind = "TextBox";
-            box.Name = "textBox1";
-            box.Caption = "мир";
-            box.Bounds = new System.Drawing.Rectangle(24, 60, 220, 24);
-            form.Items.Add(box);
-
-            var button = new DesignItem();
-            button.Kind = "Button";
-            button.Name = "button1";
-            button.Caption = "Спросить DupoLang";
-            button.Bounds = new System.Drawing.Rectangle(24, 100, 200, 32);
-            button.Click = true;
-            form.Items.Add(button);
-
-            WinFormsCode.Write(form, false);
-            Save(dir, Path.Combine("src", "Program.cs"), WinFormsCode.Program(form));
-
-            // Переписываем код формы: обработчик зовёт блок def.
-            var cs = new StringBuilder();
-            cs.AppendLine("using System;");
-            cs.AppendLine("using System.Drawing;");
-            cs.AppendLine("using System.Windows.Forms;");
-            cs.AppendLine("using DupoLang;");
-            cs.AppendLine();
-            cs.AppendLine("namespace " + ns);
-            cs.AppendLine("{");
-            cs.AppendLine("    public partial class Form1 : Form");
-            cs.AppendLine("    {");
-            cs.AppendLine("        const string Logic = \"logic.dupolang\";");
-            cs.AppendLine();
-            cs.AppendLine("        public Form1()");
-            cs.AppendLine("        {");
-            cs.AppendLine("            InitializeComponent();");
-            cs.AppendLine("        }");
-            cs.AppendLine();
-            cs.AppendLine("        private void button1_Click(object sender, EventArgs e)");
-            cs.AppendLine("        {");
-            cs.AppendLine("            try");
-            cs.AppendLine("            {");
-            cs.AppendLine("                label1.Text = Dupo.Lang.TextFrom(Logic, \"Привет\", textBox1.Text);");
-            cs.AppendLine("            }");
-            cs.AppendLine("            catch (Exception ex)");
-            cs.AppendLine("            {");
-            cs.AppendLine("                label1.Text = \"Ошибка: \" + ex.Message;");
-            cs.AppendLine("            }");
-            cs.AppendLine("        }");
-            cs.AppendLine("    }");
-            cs.AppendLine("}");
-            Save(dir, Path.Combine("src", "Form1.cs"), cs.ToString());
-
+            // Логика — отдельным файлом, как «другой класс».
             Logic(dir, name);
-            Save(dir, "main.dupolang", DupoScript(name, "Forms", "приложение WinForms"));
+
+            var code = new StringBuilder();
+            code.AppendLine("// " + name + " — окно на DupoLang, без C# и без папки src");
+            code.AppendLine("using Dupo.Forms");
+            code.AppendLine("using Dupo.Lang");
+            code.AppendLine();
+            code.AppendLine("// Форма нарисована конструктором: " + cls + FormDesignerPanel.Extension);
+            code.AppendLine("Forms.Form main = Forms.Open(" + Q + cls + FormDesignerPanel.Extension + Q + ")");
+            code.AppendLine();
+            code.AppendLine("// Нажатие кнопки идёт в блок def ниже");
+            code.AppendLine("main.On(" + Q + "button1" + Q + ", " + Q + "Нажали" + Q + ")");
+            code.AppendLine();
+            code.AppendLine("main.Show()");
+            code.AppendLine();
+            code.AppendLine("def Нажали(кто) {");
+            code.AppendLine("    string имя = main.Get(" + Q + "textBox1" + Q + ")");
+            code.AppendLine();
+            code.AppendLine("    // Методы из другого файла DupoLang — через Lang.ExecuteFrom");
+            code.AppendLine("    string ответ = Lang.ExecuteFrom(" + Q + "logic.dupolang" + Q + ", " +
+                            Q + "Привет" + Q + ", имя)");
+            code.AppendLine();
+            code.AppendLine("    main.Set(" + Q + "label1" + Q + ", ответ)");
+            code.AppendLine("}");
+            Save(dir, "program.dupolang", code.ToString());
+
+            // main.dupolang просто запускает program.dupolang — так F5 работает как везде.
+            var starter = new StringBuilder();
+            starter.AppendLine("// " + name + " — запуск окна");
+            starter.AppendLine("using Dupo.Lang");
+            starter.AppendLine();
+            starter.AppendLine("Lang.Run(" + Q + "program.dupolang" + Q + ")");
+            Save(dir, "main.dupolang", starter.ToString());
+
+            // Ресурсы лежат в assets
+            Save(dir, Path.Combine("assets", "readme.txt"),
+                 "Сюда кладутся картинки и прочие файлы приложения.\r\n" +
+                 "Из кода они видны как Resources.имя — подсказка их знает.\r\n");
         }
 
-        static void CsLibrary(string dir, string name)
+        static void CsLibrary(string dir, string name)        static void CsLibrary(string dir, string name)
         {
             string ns = Ident(name);
 

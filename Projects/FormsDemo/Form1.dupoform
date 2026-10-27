@@ -1,0 +1,5 @@
+# Форма Dupo Studio
+form Form1 "FormsDemo" 460 260
+Label label1 "Нажмите кнопку — ответит DupoLang" 24 24 400 24
+TextBox textBox1 "мир" 24 60 220 24
+Button button1 "Спросить DupoLang" 24 104 200 32

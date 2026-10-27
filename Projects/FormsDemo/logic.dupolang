@@ -1,0 +1,10 @@
+// logic.dupolang — «другой класс» с методами для формы
+using Dupo.Text
+
+def Привет(имя) {
+    return "Привет, " + Text.Trim(имя) + "!"
+}
+
+def Громко(текст) {
+    return Text.Upper(Text.Trim(текст))
+}

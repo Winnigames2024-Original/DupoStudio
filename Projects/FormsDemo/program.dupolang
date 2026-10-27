@@ -1,0 +1,18 @@
+// FormsDemo — окно на DupoLang, без C# и без папки src
+using Dupo.Forms
+using Dupo.Lang
+
+Forms.Form main = Forms.Open("Form1.dupoform")
+
+main.On("button1", "Нажали")
+
+main.Show()
+
+def Нажали(кто) {
+    string имя = main.Get("textBox1")
+
+    // Методы из другого файла DupoLang
+    string ответ = Lang.ExecuteFrom("logic.dupolang", "Привет", имя)
+
+    main.Set("label1", ответ)
+}

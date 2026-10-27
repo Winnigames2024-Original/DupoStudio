@@ -71,8 +71,9 @@ namespace DupoStudio
 
             new ProjectTemplate("winforms-dupolang", "C#", "WinForms + DupoLang",
                 "Windows Forms (.NET 4.8) + DupoLang", "MyFormsDupoApp",
-                "Окно на WinForms, а логика — в logic.dupolang: кнопка вызывает блок def " +
-                "через Dupo.Lang.ExecuteFrom. Форма правится конструктором по F7."),
+                "Окно целиком на DupoLang: папки src и C# нет вовсе. Форма лежит " +
+                "в .dupoform и правится конструктором, запускает её program.dupolang, " +
+                "а методы берутся из других файлов DupoLang. Ресурсы — в папке assets."),
 
             new ProjectTemplate("csharp-library", "C#", "C#",
                 "Библиотека классов (.dll)", "MyLibrary",

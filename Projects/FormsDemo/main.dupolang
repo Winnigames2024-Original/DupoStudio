@@ -1,0 +1,4 @@
+// FormsDemo — запуск окна
+using Dupo.Lang
+
+Lang.Run("program.dupolang")

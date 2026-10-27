@@ -121,6 +121,20 @@ namespace DupoStudio
 
             assistant.InsertCode = delegate (string code) { InsertIntoEditor(code); };
             assistant.Context = delegate { return ProjectSummary(); };
+            assistant.ProjectDir = delegate { return projectDir; };
+            assistant.FilesChanged += delegate (object s2, string path)
+            {
+                ReloadTree();
+
+                // Если помощник тронул открытый файл — перечитываем его.
+                editors.ReloadAll();
+
+                if (!string.IsNullOrEmpty(path) && File.Exists(path) &&
+                    !path.EndsWith(FormDesignerPanel.Extension, StringComparison.OrdinalIgnoreCase))
+                    OpenFile(path);
+
+                Log("Помощник поправил файлы проекта.", Theme.Ok);
+            };
             miBrowser.Click += delegate { OpenBrowser(); };
             miFolder.Click += delegate { if (projectDir != null) Process.Start(projectDir); };
             miProperties.Click += delegate { ShowProperties(); };

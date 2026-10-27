@@ -3,16 +3,37 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
 нумерация по [SemVer](https://semver.org/lang/ru/).
 
-## [0.0.4] — 2026-10-27
+## [0.0.5] — 2026-10-27
 
-### Свой файл имён
-- `%TEMP%\dupo-Dupo\hosts.txt` — как HOSTS в Windows, только для
-  `Web.Server` и внутренних соединений студии и собранных приложений.
-  Системный файл при этом не трогается.
-- Модуль `Dupo.Hosts`: `Create`, `Add`, `Remove`, `Resolve`, `List`,
-  `Rewrite`, `Reload`, `Open`, `Text`.
-- Имена, указывающие на `127.0.0.1`, сервер слушает сам, а `Web.Get`
-  и `Web.Download` ходят по ним же. В студии: Инструменты → «Файл имён».
+### Помощник правит файлы
+- Помощник теперь не только отвечает, но и **меняет файлы проекта**:
+  создаёт, переписывает, дописывает, заменяет куски и удаляет.
+- Правки не применяются молча: студия показывает список и кнопки
+  «Применить» и «Не надо». Прежние файлы складываются в `.dupo/backup`.
+- Пути проверяются — за пределы проекта помощник не выйдет.
+- В разговор уходит содержимое файлов проекта, так что он видит код.
+
+### Окна на DupoLang
+- Модуль **`Dupo.Forms`**: окно собирается прямо на DupoLang, без C#.
+  `Forms.Open("Form1.dupoform")`, `On`, `Get`, `Set`, `Checked`, `Push`,
+  `Clear`, `SetImage`, `Enable`, `ShowItem`, `Show`, `Close`,
+  а ещё `Forms.Message` и `Forms.Ask`.
+- Шаблон **«Windows Forms + DupoLang»** переделан: папки `src` нет,
+  форма лежит в `.dupoform` и правится конструктором, запускает её
+  `program.dupolang`, а методы берутся из других файлов DupoLang
+  через `Lang.ExecuteFrom`.
+- События: `click`, `change`, `select`, `close`.
+
+### Ресурсы
+- Папка ресурсов теперь **`assets`**; старая `Resources` ещё читается,
+  так что прежние проекты работают как работали.
+
+### Ollama
+- Кнопка **«Поставить Ollama»** в настройках помощника: скачивает
+  установщик, ставит его тихо и подтягивает модель `qwen2.5-coder`.
+- Если Ollama установлена, но не запущена, студия поднимает её сама.
+
+## [0.0.4] — 2026-10-27
 
 ### Запуск и сборка
 - **Запуск теперь как в Visual Studio**: F5 собирает проект в `.exe`
@@ -208,6 +229,7 @@
 - `DupoStudioSetup.exe` — установка для пользователя, без прав администратора:
   ярлыки, запись в список программ, связывание `.dupolang` и `.dapp`, удаление.
 
+[0.0.5]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v0.0.5
 [0.0.4]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v0.0.4
 [0.0.3]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v0.0.3
 [0.0.2]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v0.0.2

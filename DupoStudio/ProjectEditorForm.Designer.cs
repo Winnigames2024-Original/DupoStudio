@@ -80,7 +80,11 @@ namespace DupoStudio
             miToolsFolder = new ToolStripMenuItem("Папка BuildTools");
             miToolsRemove = new ToolStripMenuItem("Удалить BuildTools");
 
-            miHosts = new ToolStripMenuItem("Файл имён (hosts)");
+            // Пункта в меню нет: файл имён открывается по Ctrl+Shift+H.
+            miHosts = new ToolStripMenuItem("Файл имён");
+            miHosts.Visible = false;
+            miHosts.ShortcutKeys = Keys.Control | Keys.Shift | Keys.H;
+            miHosts.ShowShortcutKeys = false;
             miService = new ToolStripMenuItem("Фоновый сервис");
             miSvcInstall = new ToolStripMenuItem("Установить сервис");
             miSvcStart = new ToolStripMenuItem("Запустить");
@@ -173,14 +177,14 @@ namespace DupoStudio
                 miPhpInstall, miPhpInfo, miPhpRemove, new ToolStripSeparator(),
                 miJdkInstall, miJdkInfo, miJdkRemove, new ToolStripSeparator(),
                 miToolsGet, miToolsFolder, miToolsRemove, new ToolStripSeparator(),
-                miService, miHosts, new ToolStripSeparator(),
+                miService, new ToolStripSeparator(),
                 miBrowser, miFolder });
 
             miProject.DropDownItems.AddRange(new ToolStripItem[] {
                 miProperties, miResources, new ToolStripSeparator(),
                 miNewWinForm, miNewForm, miOpenForm, miToggleDesigner, miFormCode });
             miHelp.DropDownItems.AddRange(new ToolStripItem[] {
-                miUpdate, new ToolStripSeparator(), miAbout });
+                miUpdate, new ToolStripSeparator(), miAbout, miHosts });
 
             miNewProject.ShortcutKeys = Keys.Control | Keys.N;
             miNewJava.ShortcutKeys = Keys.Control | Keys.Shift | Keys.N;

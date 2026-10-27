@@ -1,0 +1,10 @@
+# Свойства проекта Dupo Studio
+name=FormsDemo
+product=Dupo Studio
+author=Winnigames2024
+version=1.0
+description=Окно целиком на DupoLang
+namespace=FormsDemo
+javapackage=com.winnigames2024.formsdemo
+references=
+singleexe=1
