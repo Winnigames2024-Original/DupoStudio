@@ -17,6 +17,8 @@ namespace DupoStudio
         Interp interp;
         bool running;
 
+        WelcomePanel welcome;
+
         static readonly Font tabFont = new Font("Segoe UI", 9f);
         static readonly string[] SkipDirs = { "build", "bin", "obj", ".git", ".vs", "runtime", "node_modules" };
 
@@ -32,11 +34,14 @@ namespace DupoStudio
 
             Load += delegate
             {
+                BuildWelcome();
                 try { splitMain.SplitterDistance = 260; } catch { }
                 try { splitRight.SplitterDistance = Math.Max(120, splitRight.Height - 230); } catch { }
                 Banner();
                 if (Directory.Exists(start)) OpenProject(start);
                 else Status("Создайте проект: Файл → Новый проект");
+
+                UpdateWelcome();
             };
         }
 
@@ -86,6 +91,35 @@ namespace DupoStudio
 
             FormClosing += OnClosing;
             UpdateRunState();
+        }
+
+        // ---------------- стартовый экран ----------------
+
+        void BuildWelcome()
+        {
+            welcome = new WelcomePanel();
+            welcome.NewProject += delegate { NewProject(); };
+            welcome.NewJavaProject += delegate { NewJavaProject(); };
+            welcome.OpenProject += delegate { OpenProjectDialog(); };
+            welcome.OpenRecent += delegate (object s, string path) { OpenProject(path); };
+
+            splitRight.Panel1.Controls.Add(welcome);
+            welcome.BringToFront();
+        }
+
+        /// <summary>Пока не открыт ни один файл — показываем стартовый экран.</summary>
+        void UpdateWelcome()
+        {
+            if (welcome == null) return;
+
+            bool empty = tabsEditor.TabPages.Count == 0;
+            welcome.Visible = empty;
+
+            if (empty)
+            {
+                welcome.LoadRecent(Path.Combine(DupoRuntime.RuntimeDir, "Projects"));
+                welcome.BringToFront();
+            }
         }
 
         // ---------------- проект ----------------
@@ -311,6 +345,7 @@ namespace DupoStudio
             tabsEditor.SelectedTab = tab;
 
             editor.HighlightNow();
+            UpdateWelcome();
             Status(path);
         }
 

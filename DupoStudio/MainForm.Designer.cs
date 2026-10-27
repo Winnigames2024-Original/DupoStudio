@@ -108,6 +108,9 @@ namespace DupoStudio
                 miBrowser, miFolder });
             miHelp.DropDownItems.Add(miAbout);
 
+            miNewProject.ShortcutKeys = Keys.Control | Keys.N;
+            miNewJava.ShortcutKeys = Keys.Control | Keys.Shift | Keys.N;
+            miOpenProject.ShortcutKeys = Keys.Control | Keys.O;
             miSave.ShortcutKeys = Keys.Control | Keys.S;
             miSaveAll.ShortcutKeys = Keys.Control | Keys.Shift | Keys.S;
             miStart.ShortcutKeys = Keys.F5;
@@ -116,6 +119,11 @@ namespace DupoStudio
             miBuildExe.ShortcutKeys = Keys.Control | Keys.B;
 
             menuMain.Items.AddRange(new ToolStripItem[] { miFile, miRun, miTools, miHelp });
+
+            // Верхние пункты наследуют цвет от строки меню, а выпадающие — нет:
+            // у них свой владелец с системным чёрным текстом, и на тёмном фоне
+            // их попросту не видно. Красим всё дерево вручную.
+            PaintMenuItems(menuMain.Items);
             menuMain.BackColor = Theme.Chrome;
             menuMain.ForeColor = Theme.Text;
             menuMain.Padding = new Padding(6, 2, 0, 2);
@@ -236,6 +244,29 @@ namespace DupoStudio
             splitRight.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
+        }
+    }
+
+    partial class MainForm
+    {
+        /// <summary>Задаёт светлый текст всем пунктам меню, включая выпадающие.</summary>
+        static void PaintMenuItems(ToolStripItemCollection items)
+        {
+            foreach (ToolStripItem item in items)
+            {
+                if (item is ToolStripSeparator) continue;
+
+                item.ForeColor = Theme.Text;
+
+                var menu = item as ToolStripMenuItem;
+                if (menu == null) continue;
+
+                menu.DropDown.BackColor = Theme.Chrome;
+                menu.DropDown.ForeColor = Theme.Text;
+                menu.DropDown.Renderer = new ToolStripProfessionalRenderer(new DarkColors());
+
+                PaintMenuItems(menu.DropDownItems);
+            }
         }
     }
 

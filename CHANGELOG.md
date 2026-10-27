@@ -3,6 +3,20 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
 нумерация по [SemVer](https://semver.org/lang/ru/).
 
+## [1.6.0] — 2026-10-27
+
+### Исправлено
+- **Выпадающие пункты меню были не видны.** Цвет задавался строке меню, но
+  выпадающие списки наследуют его не от неё, а от своего владельца с системным
+  чёрным текстом — на тёмном фоне получалось чёрным по чёрному. Теперь цвет
+  проставляется всему дереву пунктов.
+
+### Добавлено
+- **Стартовый экран** — пока не открыт ни один файл, видны крупные кнопки
+  «Новый проект», «Новый Java-проект», «Открыть проект» и список недавних.
+- Горячие клавиши: `Ctrl+N` — новый проект, `Ctrl+Shift+N` — новый Java-проект,
+  `Ctrl+O` — открыть проект.
+
 ## [1.5.1] — 2026-10-27
 
 ### Исправлено
@@ -100,6 +114,7 @@
   вкладки, консоль вывода, F5.
 - `DupoRun` — консольный рантайм.
 
+[1.6.0]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.6.0
 [1.5.1]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.5.1
 [1.5.0]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.5.0
 [1.4.0]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.4.0
