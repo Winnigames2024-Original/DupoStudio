@@ -1,0 +1,44 @@
+// DataDemo — словари, JSON и работа с текстом
+using Dupo.Data
+using Dupo.Json
+using Dupo.Text
+
+print("=== Словарь ===")
+
+Data.Map user = new Data.Map()
+user["имя"] = "Акварелька"
+user["город"] = "Новый Уренгой"
+user["год"] = 2019
+
+print("Имён внутри: " + len(user))
+print("Город: " + user["город"])
+print("Ключи: " + keys(user))
+print("Есть ли 'год': " + has(user, "год"))
+print("")
+
+// Короткая запись без модуля
+var short = map("a", 1, "b", 2)
+print("short = " + short)
+print("")
+
+print("=== JSON ===")
+
+string text = Json.Pretty(user)
+print(text)
+print("")
+
+var back = Json.Parse(text)
+print("Обратно из JSON: " + back["имя"])
+print("")
+
+print("=== Текст ===")
+
+string line = "  Философия чувств — методика Лилии  "
+print("Trim:    [" + Text.Trim(line) + "]")
+print("Upper:   " + Text.Upper(Text.Trim(line)))
+print("Слова:   " + Text.Words(line))
+print("Замена:  " + Text.Replace(line, "методика", "практика"))
+print("Повтор:  " + Text.Repeat("-", 20))
+print("Шаблон:  " + Text.Fill("{имя} из {город}", user))
+print("Base64:  " + Text.ToBase64("Dupo"))
+print("Обратно: " + Text.FromBase64(Text.ToBase64("Dupo")))

@@ -1,0 +1,9 @@
+# Свойства проекта Dupo Studio
+name=DataDemo
+product=Dupo Studio
+author=Winnigames2024
+version=1.0
+description=Пример Dupo.Data, Dupo.Json и Dupo.Text
+namespace=DataDemo
+javapackage=com.winnigames2024.datademo
+singleexe=1

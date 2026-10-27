@@ -120,6 +120,7 @@ namespace DupoLang
                 object v = Arg(a, 0);
                 if (v is string) return (double)((string)v).Length;
                 if (v is List<object>) return (double)((List<object>)v).Count;
+                if (v is DupoMap) return ((DupoMap)v).Count;
                 return 0d;
             });
             Def("wait", delegate (object[] a) {
@@ -133,6 +134,24 @@ namespace DupoLang
                 return (double)rnd.Next((int)Val.Num(a[0]), (int)Val.Num(a[1]));
             });
             Def("list", delegate (object[] a) { return new List<object>(a); });
+            Def("map", delegate (object[] a) {
+                // map("имя", значение, "имя2", значение2, ...)
+                var m = new DupoMap();
+                for (int k = 0; k + 1 < a.Length; k += 2) m.Set(Val.Str(a[k]), a[k + 1]);
+                return m;
+            });
+            Def("keys", delegate (object[] a) {
+                var m = Arg(a, 0) as DupoMap;
+                return m == null ? new List<object>() : m.Keys;
+            });
+            Def("values", delegate (object[] a) {
+                var m = Arg(a, 0) as DupoMap;
+                return m == null ? new List<object>() : m.Values;
+            });
+            Def("has", delegate (object[] a) {
+                var m = Arg(a, 0) as DupoMap;
+                return m != null && m.Has(Val.Str(Arg(a, 1)));
+            });
             Def("push", delegate (object[] a) {
                 var l = Arg(a, 0) as List<object>;
                 if (l != null) for (int k = 1; k < a.Length; k++) l.Add(a[k]);
@@ -279,6 +298,9 @@ namespace DupoLang
                     if (k < 0 || k >= list.Count) throw new DupoError("Индекс " + k + " вне массива", ie.Line);
                     return list[k];
                 }
+                var map = t as DupoMap;
+                if (map != null) return map.Get(Val.Str(idx));
+
                 if (t is string)
                 {
                     string s = (string)t;
@@ -394,8 +416,17 @@ namespace DupoLang
             var ie = ae.Target as IndexExpr;
             if (ie != null)
             {
-                var list = Eval(ie.Target, env) as List<object>;
-                if (list == null) throw new DupoError("Слева от '=' не массив", ie.Line);
+                object target = Eval(ie.Target, env);
+
+                var map = target as DupoMap;
+                if (map != null)
+                {
+                    map.Set(Val.Str(Eval(ie.Index, env)), value);
+                    return value;
+                }
+
+                var list = target as List<object>;
+                if (list == null) throw new DupoError("Слева от '=' не массив и не словарь", ie.Line);
                 int k = (int)Val.Num(Eval(ie.Index, env));
                 while (list.Count <= k) list.Add(null);
                 list[k] = value;

@@ -15,6 +15,7 @@ namespace DupoLang
         {
             "Dupo.Web", "Dupo.App", "Dupo.Java", "Dupo.Tools", "Dupo.Resources",
             "Dupo.Services", "Dupo.CSharp", "Dupo.Cpp",
+            "Dupo.Data", "Dupo.Json", "Dupo.Text",
             "Dupo.System.Files", "Dupo.System", "Dupo.IO", "Dupo.Sys"
         };
 
@@ -32,6 +33,9 @@ namespace DupoLang
                 case "Dupo.Services": return ServicesNs(interp);
                 case "Dupo.CSharp": return CSharpNs(interp);
                 case "Dupo.Cpp": return CppNs(interp);
+                case "Dupo.Data": return DataNs(interp);
+                case "Dupo.Json": return JsonNs(interp);
+                case "Dupo.Text": return TextNs(interp);
                 case "Dupo.System.Files": return Files(interp);
                 case "Dupo.System": return SystemNs(interp);
             }
@@ -194,6 +198,36 @@ namespace DupoLang
             return ns;
         }
 
+        // ---------------- Dupo.Data ----------------
+        static NativeNamespace DataNs(Interp interp)
+        {
+            var ns = new NativeNamespace("Data");
+            ns.Members["Map"] = new NativeType("Map", typeof(DupoMap));
+            ns.Members["Json"] = JsonNs(interp);
+            ns.Members["Text"] = TextNs(interp);
+            return ns;
+        }
+
+        // ---------------- Dupo.Json ----------------
+        static NativeNamespace JsonNs(Interp interp)
+        {
+            JsonTools.Log = interp.Print;
+
+            var ns = new NativeNamespace("Json");
+            ns.Backing = typeof(JsonTools);
+            return ns;
+        }
+
+        // ---------------- Dupo.Text ----------------
+        static NativeNamespace TextNs(Interp interp)
+        {
+            TextTools.Log = interp.Print;
+
+            var ns = new NativeNamespace("Text");
+            ns.Backing = typeof(TextTools);
+            return ns;
+        }
+
         // ---------------- Dupo.System.Files ----------------
         static NativeNamespace Files(Interp interp)
         {
@@ -211,6 +245,7 @@ namespace DupoLang
             ns.Members["Files"] = Files(interp);
             ns.Members["Java"] = Java(interp);
             ns.Members["Services"] = ServicesNs(interp);
+            ns.Members["Data"] = DataNs(interp);
             ns.Members["Sys"] = Sys();
             return ns;
         }

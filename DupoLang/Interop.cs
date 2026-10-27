@@ -61,6 +61,7 @@ namespace DupoLang
             if (v is double) return (double)v != 0;
             if (v is string) return ((string)v).Length > 0;
             if (v is List<object>) return ((List<object>)v).Count > 0;
+            if (v is DupoMap) return ((DupoMap)v).Count > 0;
             return true;
         }
 
@@ -108,6 +109,7 @@ namespace DupoLang
             if (v is string) return "string";
             if (v is bool) return "bool";
             if (v is List<object>) return "array";
+            if (v is DupoMap) return "map";
             if (v is DupoFunction || v is Builtin || v is NativeMethod) return "function";
             if (v is NativeType) return "type";
             if (v is NativeNamespace) return "module";

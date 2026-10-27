@@ -43,6 +43,11 @@ namespace DupoCs
         {
             new KeyValuePair<string, string>("Web.Server.Php", "PhpTools.Instance"),
             new KeyValuePair<string, string>("Web.Server", "DupoWebServer"),
+            new KeyValuePair<string, string>("Data.Map", "DupoMap"),
+            new KeyValuePair<string, string>("Data.Json", "JsonTools"),
+            new KeyValuePair<string, string>("Data.Text", "TextTools"),
+            new KeyValuePair<string, string>("Json", "JsonTools"),
+            new KeyValuePair<string, string>("Text", "TextTools"),
             new KeyValuePair<string, string>("CSharp", "CsTools.Instance"),
             new KeyValuePair<string, string>("Cpp", "CppTools.Instance"),
             new KeyValuePair<string, string>("Services.ServiceLevel", "ServiceLevel"),

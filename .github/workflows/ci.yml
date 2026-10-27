@@ -76,6 +76,9 @@ jobs:
           & "tools/DupoLang.exe" --check "Projects/ServiceDemo/main.dupolang"
           if ($LASTEXITCODE -ne 0) { throw "ServiceDemo не разобрался" }
 
+          & "tools/DupoHost.exe" "Projects/DataDemo/main.dupolang"
+          if ($LASTEXITCODE -ne 0) { throw "DataDemo не выполнился" }
+
           & "tools/DupoHost.exe" "Projects/CsDemo/main.dupolang"
           if ($LASTEXITCODE -ne 0) { throw "CsDemo не собрался" }
           if (-not (Test-Path "Projects/CsDemo/build/CsDemo.exe")) { throw "Dupo.CSharp не выдал exe" }

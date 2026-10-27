@@ -45,7 +45,7 @@ namespace DupoStudio
                 "ReadFile", "WriteFile", "AppendFile", "Exists", "MakeDir",
                 "Delete", "Files", "Dirs", "ProjectDir" } },
             { "Sys", new[] { "Run", "Open", "Env", "Sleep", "Time", "Date" } },
-            { "System", new[] { "Files", "Java", "Sys", "Services" } },
+            { "System", new[] { "Files", "Java", "Sys", "Services", "Data" } },
             { "Services", new[] {
                 "Service", "ServiceLevel", "Exists", "State", "List", "Levels",
                 "LevelName", "IsAdmin" } },
@@ -54,6 +54,18 @@ namespace DupoStudio
                 "Program", "Arguments", "Folder", "SetLevel",
                 "Install", "Uninstall", "Start", "Stop", "Restart",
                 "Installed", "Running", "State", "NeedsAdmin", "Info" } },
+            { "Text", new[] {
+                "Trim", "TrimStart", "TrimEnd", "Upper", "Lower", "Length", "IsEmpty",
+                "Replace", "Contains", "StartsWith", "EndsWith", "IndexOf",
+                "Cut", "Left", "Right", "Split", "Lines", "Words", "Join",
+                "Repeat", "Reverse", "PadLeft", "PadRight", "Capital", "CountOf",
+                "Format", "Fill", "Match", "Find", "ReplaceAll",
+                "ToNumber", "Round", "ToBase64", "FromBase64", "UrlEncode", "UrlDecode" } },
+            { "Json", new[] { "Parse", "Read", "Text", "Pretty", "Save" } },
+            { "Data", new[] { "Map", "Json", "Text" } },
+            { "Data.Map", new[] {
+                "Get", "Set", "Has", "Remove", "Clear", "Copy",
+                "Keys", "Values", "Count" } },
             { "CSharp", new[] {
                 "Build", "Forms", "Library", "Compile", "Run", "Launch",
                 "IsInstalled", "Version", "Folder", "Install", "CscPath", "Sources" } },
@@ -72,7 +84,8 @@ namespace DupoStudio
             "print", "println", "str", "num", "int", "round", "abs", "type", "len",
             "wait", "now", "random", "list", "push", "upper", "lower", "split",
             "Web", "Files", "Java", "Tools", "App", "IO", "Sys", "Resources", "Services",
-            "CSharp", "Cpp"
+            "CSharp", "Cpp", "Text", "Json", "Data",
+            "map", "keys", "values", "has"
         };
 
         public CodeCompletion(CodeEditor owner)
