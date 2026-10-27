@@ -269,7 +269,8 @@ namespace DupoLang
             var flags = stat ? StatFlags : InstFlags;
             var cands = m.Owner.GetMethods(flags)
                 .Where(x => string.Equals(x.Name, m.Name, StringComparison.OrdinalIgnoreCase)
-                            && x.GetParameters().Length == args.Length)
+                            && Accepts(x, args.Length))
+                .OrderBy(x => Variadic(x) ? 1 : 0)
                 .ToList();
 
             if (cands.Count == 0)
@@ -279,7 +280,7 @@ namespace DupoLang
             foreach (var mi in cands)
             {
                 object[] conv;
-                if (!TryCastAll(args, mi.GetParameters(), out conv, ref last)) continue;
+                if (!Fits(mi, args, out conv, ref last)) continue;
                 try { return Wrap(mi.Invoke(m.Target, conv)); }
                 catch (TargetInvocationException tie)
                 {
@@ -292,7 +293,11 @@ namespace DupoLang
 
         public static object Construct(Type t, object[] args, int line)
         {
-            var cands = t.GetConstructors().Where(c => c.GetParameters().Length == args.Length).ToList();
+            var cands = t.GetConstructors()
+                .Where(c => Accepts(c, args.Length))
+                .OrderBy(c => Variadic(c) ? 1 : 0)
+                .ToList();
+
             if (cands.Count == 0)
                 throw new DupoError("У типа " + t.Name + " нет конструктора с " + args.Length + " аргументом(ами)", line);
 
@@ -300,7 +305,7 @@ namespace DupoLang
             foreach (var ci in cands)
             {
                 object[] conv;
-                if (!TryCastAll(args, ci.GetParameters(), out conv, ref last)) continue;
+                if (!Fits(ci, args, out conv, ref last)) continue;
                 try { return ci.Invoke(conv); }
                 catch (TargetInvocationException tie)
                 {
@@ -309,6 +314,71 @@ namespace DupoLang
             }
             throw new DupoError("Аргументы не подходят для new " + t.Name +
                                 (last == null ? "" : " (" + last.Message + ")"), line);
+        }
+
+        /// <summary>Последний параметр объявлен как params.</summary>
+        static bool Variadic(MethodBase m)
+        {
+            var ps = m.GetParameters();
+            return ps.Length > 0 && ps[ps.Length - 1].IsDefined(typeof(ParamArrayAttribute), false);
+        }
+
+        /// <summary>Может ли метод принять столько аргументов.</summary>
+        static bool Accepts(MethodBase m, int count)
+        {
+            int n = m.GetParameters().Length;
+            return Variadic(m) ? count >= n - 1 : count == n;
+        }
+
+        /// <summary>
+        /// Приводит аргументы к параметрам, при необходимости собирая
+        /// хвост в массив params — иначе вызовы вида
+        /// Lang.ExecuteFrom(файл, блок, арг1, арг2) не находили метода.
+        /// </summary>
+        static bool Fits(MethodBase m, object[] args, out object[] conv, ref Exception last)
+        {
+            conv = null;
+            var ps = m.GetParameters();
+
+            if (!Variadic(m))
+            {
+                if (ps.Length != args.Length) return false;
+                return TryCastAll(args, ps, out conv, ref last);
+            }
+
+            int fixedCount = ps.Length - 1;
+            if (args.Length < fixedCount) return false;
+
+            // Массив могли передать и целиком — тогда ничего собирать не нужно.
+            if (args.Length == ps.Length)
+            {
+                Exception ignore = null;
+                object[] exact;
+                if (TryCastAll(args, ps, out exact, ref ignore)) { conv = exact; return true; }
+            }
+
+            var head = new object[fixedCount];
+            Array.Copy(args, head, fixedCount);
+
+            var headPs = new ParameterInfo[fixedCount];
+            Array.Copy(ps, headPs, fixedCount);
+
+            object[] convHead;
+            if (!TryCastAll(head, headPs, out convHead, ref last)) return false;
+
+            Type elem = ps[fixedCount].ParameterType.GetElementType();
+            var tail = Array.CreateInstance(elem, args.Length - fixedCount);
+
+            for (int k = fixedCount; k < args.Length; k++)
+            {
+                try { tail.SetValue(Cast(args[k], elem), k - fixedCount); }
+                catch (Exception ex) { last = ex; return false; }
+            }
+
+            conv = new object[ps.Length];
+            Array.Copy(convHead, conv, fixedCount);
+            conv[fixedCount] = tail;
+            return true;
         }
 
         static bool TryCastAll(object[] args, ParameterInfo[] ps, out object[] result, ref Exception last)

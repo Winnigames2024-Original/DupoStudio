@@ -33,7 +33,7 @@ namespace DupoLang
         public static Action<string> Log = delegate (string s) { Console.WriteLine(s); };
 
         static readonly string[] SkipDirs =
-            { "build", "bin", "obj", ".git", ".vs", "node_modules", "runtime" };
+            { "build", "bin", "obj", ".git", ".vs", ".dupo", "node_modules", "runtime" };
 
         // ---------------- упаковка ----------------
 

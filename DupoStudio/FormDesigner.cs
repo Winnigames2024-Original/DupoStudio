@@ -18,6 +18,9 @@ namespace DupoStudio
         public string Caption = "";
         public Rectangle Bounds = new Rectangle(20, 20, 120, 30);
 
+        /// <summary>Есть ли у элемента обработчик нажатия.</summary>
+        public bool Click;
+
         /// <summary>Настоящий контрол, который виден на холсте.</summary>
         public Control Live;
 
@@ -75,6 +78,14 @@ namespace DupoStudio
         {
             get { return item.Bounds.Height; }
             set { item.Bounds = new Rectangle(item.Bounds.X, item.Bounds.Y, item.Bounds.Width, Math.Max(8, value)); Fire(); }
+        }
+
+        [Category("События"), DisplayName("Нажатие (Click)"),
+         Description("Создать обработчик <имя>_Click в коде формы")]
+        public bool Click
+        {
+            get { return item.Click; }
+            set { item.Click = value; Fire(); }
         }
 
         void Fire() { var h = changed; if (h != null) h(); }
@@ -205,6 +216,15 @@ namespace DupoStudio
 
         /// <summary>Файл, с которым работаем.</summary>
         public string FilePath { get; private set; }
+
+        /// <summary>true — правим Form1.Designer.cs, false — .dupoform.</summary>
+        public bool WinForms { get; private set; }
+
+        /// <summary>Пространство имён формы WinForms.</summary>
+        public string FormNamespace = "App";
+
+        /// <summary>Открыть файл в редакторе кода — дизайнер просит.</summary>
+        public event EventHandler<string> OpenCode;
 
         /// <summary>Есть ли несохранённые правки.</summary>
         public bool Dirty { get; private set; }
@@ -379,9 +399,36 @@ namespace DupoStudio
                 if (h != null) h(this, EventArgs.Empty);
             };
             c.MouseUp += delegate { dragging = false; };
+            c.DoubleClick += delegate { WireClick(item); };
 
             item.Live = c;
             canvas.Controls.Add(c);
+        }
+
+        /// <summary>
+        /// Двойной щелчок по элементу создаёт обработчик нажатия
+        /// и открывает код формы — как в Visual Studio.
+        /// </summary>
+        void WireClick(DesignItem item)
+        {
+            if (item == null || !WinFormsCode.CanClick(item.Kind)) return;
+
+            item.Click = true;
+            Dirty = true;
+
+            var sel = SelectionChanged;
+            if (sel != null) sel(this, EventArgs.Empty);
+
+            if (!WinForms) return;
+
+            try
+            {
+                SaveWinForms(false);
+                string code = WinFormsCode.CodeFileOf(FilePath);
+                var h = OpenCode;
+                if (h != null && code != null) h(this, code);
+            }
+            catch { }
         }
 
         static Control Make(string kind)
@@ -463,11 +510,64 @@ namespace DupoStudio
             selected = null;
 
             FilePath = path;
+            WinForms = WinFormsCode.IsDesigner(path);
             FormName = ProjectTemplates.Ident(name);
             FormTitle = name;
             FormSize = new Size(480, 320);
             Dirty = false;
             Touch();
+        }
+
+        // ------------------------------------------------------------------
+        // Windows Forms: Form1.Designer.cs
+        // ------------------------------------------------------------------
+
+        /// <summary>Прочитать Form1.Designer.cs в дизайнер.</summary>
+        public void LoadWinForms(string designerPath)
+        {
+            var form = WinFormsCode.Read(designerPath);
+
+            Reset(designerPath, form.ClassName);
+            WinForms = true;
+            FormNamespace = form.Namespace;
+            FormName = form.ClassName;
+            FormTitle = form.Title;
+            FormSize = form.ClientSize;
+
+            foreach (var i in form.Items)
+            {
+                items.Add(i);
+                Materialize(i);
+            }
+
+            Dirty = false;
+            Touch();
+            Dirty = false;
+        }
+
+        /// <summary>Записать Form1.Designer.cs (и Form1.cs, если его нет).</summary>
+        public string SaveWinForms(bool withMain)
+        {
+            if (string.IsNullOrEmpty(FilePath))
+                throw new InvalidOperationException("не задан файл Designer.cs");
+
+            var form = new WinFormsForm();
+            form.DesignerPath = FilePath;
+            form.Namespace = FormNamespace;
+            form.ClassName = FormName;
+            form.Title = FormTitle;
+            form.ClientSize = FormSize;
+            form.Items.AddRange(items);
+
+            WinFormsCode.Write(form, withMain);
+            Dirty = false;
+            return FilePath;
+        }
+
+        /// <summary>Сохранить так, как положено текущему файлу.</summary>
+        public string SaveAny()
+        {
+            return WinForms ? SaveWinForms(false) : Save(null);
         }
 
         /// <summary>Прочитать .dupoform.</summary>

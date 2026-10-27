@@ -85,9 +85,12 @@ namespace DupoStudio
             miViewProps.Click += delegate { TogglePane("Свойства"); };
             miViewToolbox.Click += delegate { TogglePane("Панель элементов"); };
             miViewConsole.Click += delegate { TogglePane("Вывод"); };
+            miViewAssistant.Click += delegate { TogglePane("Помощник"); };
             miViewDockAll.Click += delegate { dock.DockAll(); RefreshView(); };
 
             miNewForm.Click += delegate { NewForm(); };
+            miNewWinForm.Click += delegate { NewWinForm(); };
+            miToggleDesigner.Click += delegate { ToggleDesigner(); };
             miOpenForm.Click += delegate { OpenFormFile(); };
             miFormCode.Click += delegate { FormToCode(); };
 
@@ -98,6 +101,10 @@ namespace DupoStudio
             designer.Placed += delegate { toolbox.Reset(); ShowDesignerProps(); };
             designer.SelectionChanged += delegate { ShowDesignerProps(); };
             properties.Changed += delegate { PropertiesEdited(); };
+            designer.OpenCode += delegate (object s2, string path) { ShowDesigner(false); OpenFile(path); };
+
+            assistant.InsertCode = delegate (string code) { InsertIntoEditor(code); };
+            assistant.Context = delegate { return ProjectSummary(); };
             miBrowser.Click += delegate { OpenBrowser(); };
             miFolder.Click += delegate { if (projectDir != null) Process.Start(projectDir); };
             miProperties.Click += delegate { ShowProperties(); };
@@ -238,6 +245,7 @@ namespace DupoStudio
             Status(dir);
             ShowDesigner(false);
             ShowProjectProps();
+            assistant.OpenProject(dir);
 
             string main = Path.Combine(dir, "main.dupolang");
             if (File.Exists(main)) OpenFile(main);
@@ -257,10 +265,16 @@ namespace DupoStudio
 
         void OpenFile(string path)
         {
-            // Формы открываются в дизайнере, остальное — в редакторе.
+            // Формы открываются в конструкторе, остальное — в редакторе.
             if (path != null && path.EndsWith(FormDesignerPanel.Extension, StringComparison.OrdinalIgnoreCase))
             {
                 OpenForm(path);
+                return;
+            }
+
+            if (WinFormsCode.IsDesigner(path))
+            {
+                OpenWinForm(path);
                 return;
             }
 
@@ -275,6 +289,18 @@ namespace DupoStudio
 
         void SaveActive()
         {
+            if (designer.Visible)
+            {
+                try
+                {
+                    string saved = designer.SaveAny();
+                    Log("Форма сохранена: " + Path.GetFileName(saved), Theme.Ok);
+                    ReloadTree();
+                }
+                catch (Exception ex) { Log("Форма не сохранилась: " + ex.Message, Theme.Err); }
+                return;
+            }
+
             var ed = ActiveEditor;
             if (ed == null || ed.FilePath == null) return;
 
@@ -484,6 +510,65 @@ namespace DupoStudio
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
+        // ------------------------------------------------------------------
+        // помощник
+        // ------------------------------------------------------------------
+
+        /// <summary>Вставить код из ответа помощника в открытый файл.</summary>
+        void InsertIntoEditor(string code)
+        {
+            if (string.IsNullOrEmpty(code)) return;
+
+            var ed = ActiveEditor;
+            if (ed == null)
+            {
+                Log("Откройте файл — вставлять некуда.", Theme.Dim);
+                return;
+            }
+
+            if (designer.Visible) ShowDesigner(false);
+
+            ed.SelectedText = code.EndsWith(Environment.NewLine) ? code : code + Environment.NewLine;
+            ed.Focus();
+            Log("Код вставлен из ответа помощника.", Theme.Ok);
+        }
+
+        /// <summary>Чем описать открытый проект помощнику.</summary>
+        string ProjectSummary()
+        {
+            if (projectDir == null) return "";
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Папка: " + projectDir);
+            sb.AppendLine("Название: " + (project.Name.Length > 0 ? project.Name : Path.GetFileName(projectDir)));
+            if (project.Description.Length > 0) sb.AppendLine("Описание: " + project.Description);
+            if (project.Namespace.Length > 0) sb.AppendLine("Пространство имён: " + project.Namespace);
+            if (project.JavaPackage.Length > 0) sb.AppendLine("Пакет Java: " + project.JavaPackage);
+
+            try
+            {
+                var files = Directory.GetFiles(projectDir, "*.*", SearchOption.AllDirectories)
+                    .Where(f => !f.Contains("\\build\\") && !f.Contains("\\bin\\") &&
+                                !f.Contains("\\obj\\") && !f.Contains("\\.dupo\\"))
+                    .Select(f => f.Substring(projectDir.Length).TrimStart('\\'))
+                    .Take(40)
+                    .ToArray();
+
+                if (files.Length > 0)
+                {
+                    sb.AppendLine("Файлы:");
+                    foreach (string f in files) sb.AppendLine("  " + f);
+                }
+            }
+            catch { }
+
+            var ed = ActiveEditor;
+            if (ed != null && ed.FilePath != null)
+                sb.AppendLine("Открыт файл: " + Path.GetFileName(ed.FilePath));
+
+            return sb.ToString();
+        }
+
         void TogglePane(string title)
         {
             var pane = dock.Find(title);
@@ -501,6 +586,7 @@ namespace DupoStudio
             miViewProps.Checked = dock.IsShown(dock.Find("Свойства"));
             miViewToolbox.Checked = dock.IsShown(dock.Find("Панель элементов"));
             miViewConsole.Checked = dock.IsShown(dock.Find("Вывод"));
+            miViewAssistant.Checked = dock.IsShown(dock.Find("Помощник"));
         }
 
         /// <summary>Окно свойств показывает проект, когда дизайнер закрыт.</summary>
@@ -581,6 +667,103 @@ namespace DupoStudio
 
             ShowDesigner(true);
             ReloadTree();
+        }
+
+        /// <summary>Создать пару Form1.cs + Form1.Designer.cs.</summary>
+        void NewWinForm()
+        {
+            if (projectDir == null) { Log("Сначала откройте проект.", Theme.Dim); return; }
+
+            string name = PromptDialog.Show(this, "Новая форма Windows Forms", "Класс формы:", "Form1");
+            if (string.IsNullOrEmpty(name)) return;
+
+            string cls = ProjectTemplates.Ident(name);
+            string dir = Path.Combine(projectDir, "src");
+            Directory.CreateDirectory(dir);
+
+            string designerPath = Path.Combine(dir, cls + WinFormsCode.DesignerSuffix);
+            if (File.Exists(designerPath))
+            {
+                Log("Такая форма уже есть: " + cls, Theme.Dim);
+                return;
+            }
+
+            var form = new WinFormsForm();
+            form.DesignerPath = designerPath;
+            form.Namespace = project.Namespace.Length > 0
+                ? project.Namespace : ProjectTemplates.Ident(project.Name);
+            form.ClassName = cls;
+            form.Title = name;
+
+            var button = new DesignItem();
+            button.Kind = "Button";
+            button.Name = "button1";
+            button.Caption = "Нажми меня";
+            button.Bounds = new Rectangle(24, 24, 140, 32);
+            button.Click = true;
+            form.Items.Add(button);
+
+            try
+            {
+                WinFormsCode.Write(form, false);
+
+                // Точка входа, если её ещё нет в проекте.
+                string program = Path.Combine(dir, "Program.cs");
+                bool haveMain = Directory.GetFiles(dir, "*.cs", SearchOption.AllDirectories)
+                    .Any(f => File.ReadAllText(f).Contains("static void Main"));
+
+                if (!haveMain && !File.Exists(program))
+                    File.WriteAllText(program, WinFormsCode.Program(form), new UTF8Encoding(false));
+
+                Log("Форма создана: " + Path.GetFileName(designerPath), Theme.Ok);
+            }
+            catch (Exception ex) { Log("Форма не создалась: " + ex.Message, Theme.Err); return; }
+
+            OpenWinForm(designerPath);
+            ReloadTree();
+        }
+
+        /// <summary>Открыть Form1.Designer.cs в конструкторе.</summary>
+        public void OpenWinForm(string designerPath)
+        {
+            try
+            {
+                designer.LoadWinForms(designerPath);
+                ShowDesigner(true);
+                Log("Конструктор: " + Path.GetFileName(designerPath), Theme.Info);
+            }
+            catch (Exception ex) { Log("Форма не разобралась: " + ex.Message, Theme.Err); }
+        }
+
+        /// <summary>F7 — переключение между конструктором и кодом, как в Visual Studio.</summary>
+        void ToggleDesigner()
+        {
+            if (designer.Visible)
+            {
+                string code = designer.WinForms
+                    ? WinFormsCode.CodeFileOf(designer.FilePath)
+                    : null;
+
+                ShowDesigner(false);
+                if (code != null && File.Exists(code)) OpenFile(code);
+                return;
+            }
+
+            var ed = ActiveEditor;
+            string path = ed == null ? null : ed.FilePath;
+
+            if (path != null && WinFormsCode.IsDesigner(path)) { OpenWinForm(path); return; }
+
+            string sibling = WinFormsCode.DesignerFileOf(path);
+            if (sibling != null) { OpenWinForm(sibling); return; }
+
+            if (path != null && path.EndsWith(FormDesignerPanel.Extension, StringComparison.OrdinalIgnoreCase))
+            {
+                OpenForm(path);
+                return;
+            }
+
+            Log("Для этого файла конструктора нет — откройте .Designer.cs или .dupoform.", Theme.Dim);
         }
 
         void OpenFormFile()
@@ -986,6 +1169,20 @@ namespace DupoStudio
 
         void OnClosing(object sender, FormClosingEventArgs e)
         {
+            try { assistant.Store(); } catch { }
+
+            if (designer.Visible && designer.Dirty)
+            {
+                var d = MessageBox.Show(this, "Форма изменена. Сохранить?",
+                    "Dupo Studio", MessageBoxButtons.YesNoCancel);
+                if (d == DialogResult.Cancel) { e.Cancel = true; return; }
+                if (d == DialogResult.Yes)
+                {
+                    try { designer.SaveAny(); }
+                    catch (Exception ex) { Log("Форма не сохранилась: " + ex.Message, Theme.Err); }
+                }
+            }
+
             if (editors.HasDirty)
             {
                 var r = MessageBox.Show(this, "Есть несохранённые изменения. Сохранить?",

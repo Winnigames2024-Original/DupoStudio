@@ -16,8 +16,9 @@ namespace DupoStudio
         ToolStripMenuItem miToolsGet, miToolsFolder, miToolsRemove;
         ToolStripMenuItem miService, miSvcInstall, miSvcStart, miSvcStop, miSvcRemove, miSvcStatus, miSvcQueue;
         ToolStripMenuItem miProject, miProperties, miResources;
-        ToolStripMenuItem miView, miViewExplorer, miViewProps, miViewToolbox, miViewConsole, miViewDockAll;
-        ToolStripMenuItem miNewForm, miOpenForm, miFormCode;
+        ToolStripMenuItem miView, miViewExplorer, miViewProps, miViewToolbox, miViewConsole;
+        ToolStripMenuItem miViewAssistant, miViewDockAll;
+        ToolStripMenuItem miNewForm, miOpenForm, miFormCode, miNewWinForm, miToggleDesigner;
         ToolStripMenuItem miHelp, miAbout;
 
         ToolStrip toolMain;
@@ -27,6 +28,7 @@ namespace DupoStudio
         PropertiesPanel properties;
         ToolboxPanel toolbox;
         FormDesignerPanel designer;
+        AssistantPanel assistant;
         StatusStrip statusMain;
         ToolStripStatusLabel lblStatus, lblCaret, lblProject, lblPhp, lblJava;
 
@@ -94,7 +96,10 @@ namespace DupoStudio
             miProperties = new ToolStripMenuItem("Свойства проекта...");
             miResources = new ToolStripMenuItem("Папка ресурсов");
 
-            miNewForm = new ToolStripMenuItem("Новая форма...");
+            miNewForm = new ToolStripMenuItem("Новая форма DupoLang...");
+            miNewWinForm = new ToolStripMenuItem("Новая форма Windows Forms...");
+            miToggleDesigner = new ToolStripMenuItem("Конструктор / Код");
+            miToggleDesigner.ShortcutKeys = Keys.F7;
             miOpenForm = new ToolStripMenuItem("Открыть форму...");
             miFormCode = new ToolStripMenuItem("Сгенерировать код формы");
 
@@ -103,13 +108,16 @@ namespace DupoStudio
             miViewProps = new ToolStripMenuItem("Окно свойств");
             miViewToolbox = new ToolStripMenuItem("Панель элементов");
             miViewConsole = new ToolStripMenuItem("Вывод");
+            miViewAssistant = new ToolStripMenuItem("Помощник");
+            miViewAssistant.ShortcutKeys = Keys.Control | Keys.Alt | Keys.A;
+            miViewAssistant.CheckOnClick = true;
             miViewDockAll = new ToolStripMenuItem("Вернуть все окна на место");
             miViewExplorer.CheckOnClick = true;
             miViewProps.CheckOnClick = true;
             miViewToolbox.CheckOnClick = true;
             miViewConsole.CheckOnClick = true;
             miView.DropDownItems.AddRange(new ToolStripItem[] {
-                miViewExplorer, miViewProps, miViewToolbox, miViewConsole,
+                miViewExplorer, miViewProps, miViewToolbox, miViewConsole, miViewAssistant,
                 new ToolStripSeparator(), miViewDockAll });
 
             miHelp = new ToolStripMenuItem("Справка");
@@ -129,6 +137,7 @@ namespace DupoStudio
             properties = new PropertiesPanel();
             toolbox = new ToolboxPanel();
             designer = new FormDesignerPanel();
+            assistant = new AssistantPanel();
 
             explorer = new ExplorerForm();
             editors = new CodeEditorForm();
@@ -162,7 +171,7 @@ namespace DupoStudio
 
             miProject.DropDownItems.AddRange(new ToolStripItem[] {
                 miProperties, miResources, new ToolStripSeparator(),
-                miNewForm, miOpenForm, miFormCode });
+                miNewWinForm, miNewForm, miOpenForm, miToggleDesigner, miFormCode });
             miHelp.DropDownItems.Add(miAbout);
 
             miNewProject.ShortcutKeys = Keys.Control | Keys.N;
@@ -222,6 +231,7 @@ namespace DupoStudio
             dock.Add("Свойства", properties, DockZone.Right);
             dock.Add("Панель элементов", toolbox, DockZone.Right);
             dock.Add("Вывод", console, DockZone.Bottom);
+            dock.Add("Помощник", assistant, DockZone.Right);
 
             explorer.Show();
             editors.Show();

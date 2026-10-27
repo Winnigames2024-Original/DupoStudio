@@ -217,47 +217,35 @@ namespace DupoStudio
         static void CsForms(string dir, string name)
         {
             string ns = Ident(name);
+            string src = Path.Combine(dir, "src");
+            Directory.CreateDirectory(src);
 
-            var cs = new StringBuilder();
-            cs.AppendLine("using System;");
-            cs.AppendLine("using System.Drawing;");
-            cs.AppendLine("using System.Windows.Forms;");
-            cs.AppendLine();
-            cs.AppendLine("namespace " + ns);
-            cs.AppendLine("{");
-            cs.AppendLine("    public class Form1 : Form");
-            cs.AppendLine("    {");
-            cs.AppendLine("        readonly Button button = new Button();");
-            cs.AppendLine("        readonly Label label = new Label();");
-            cs.AppendLine("        int clicks;");
-            cs.AppendLine();
-            cs.AppendLine("        public Form1()");
-            cs.AppendLine("        {");
-            cs.AppendLine("            Text = \"" + name + "\";");
-            cs.AppendLine("            ClientSize = new Size(420, 220);");
-            cs.AppendLine("            StartPosition = FormStartPosition.CenterScreen;");
-            cs.AppendLine("            Font = new Font(\"Segoe UI\", 10f);");
-            cs.AppendLine();
-            cs.AppendLine("            label.Text = \"Привет из " + name + "!\";");
-            cs.AppendLine("            label.Bounds = new Rectangle(24, 24, 360, 28);");
-            cs.AppendLine("            Controls.Add(label);");
-            cs.AppendLine();
-            cs.AppendLine("            button.Text = \"Нажми меня\";");
-            cs.AppendLine("            button.Bounds = new Rectangle(24, 70, 140, 32);");
-            cs.AppendLine("            button.Click += delegate { label.Text = \"Нажатий: \" + (++clicks); };");
-            cs.AppendLine("            Controls.Add(button);");
-            cs.AppendLine("        }");
-            cs.AppendLine();
-            cs.AppendLine("        [STAThread]");
-            cs.AppendLine("        static void Main()");
-            cs.AppendLine("        {");
-            cs.AppendLine("            Application.EnableVisualStyles();");
-            cs.AppendLine("            Application.SetCompatibleTextRenderingDefault(false);");
-            cs.AppendLine("            Application.Run(new Form1());");
-            cs.AppendLine("        }");
-            cs.AppendLine("    }");
-            cs.AppendLine("}");
-            Save(dir, Path.Combine("src", "Form1.cs"), cs.ToString());
+            // Форма создаётся парой Form1.cs + Form1.Designer.cs, как в Visual Studio,
+            // поэтому её сразу можно открыть в конструкторе.
+            var form = new WinFormsForm();
+            form.DesignerPath = Path.Combine(src, "Form1" + WinFormsCode.DesignerSuffix);
+            form.Namespace = ns;
+            form.ClassName = "Form1";
+            form.Title = name;
+            form.ClientSize = new System.Drawing.Size(460, 240);
+
+            var label = new DesignItem();
+            label.Kind = "Label";
+            label.Name = "label1";
+            label.Caption = "Привет из " + name + "!";
+            label.Bounds = new System.Drawing.Rectangle(24, 24, 380, 24);
+            form.Items.Add(label);
+
+            var button = new DesignItem();
+            button.Kind = "Button";
+            button.Name = "button1";
+            button.Caption = "Нажми меня";
+            button.Bounds = new System.Drawing.Rectangle(24, 68, 140, 32);
+            button.Click = true;
+            form.Items.Add(button);
+
+            WinFormsCode.Write(form, false);
+            Save(dir, Path.Combine("src", "Program.cs"), WinFormsCode.Program(form));
 
             Save(dir, "main.dupolang", CsScript(name, "Forms", "приложение WinForms"));
         }
