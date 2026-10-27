@@ -28,7 +28,9 @@
 
   <!-- DupoLang.dll и DupoHost.exe уезжают ресурсами внутрь DupoStudio.exe,
        чтобы студия раздавалась одним файлом. -->
-  <Target Name="EmbedRuntime" BeforeTargets="CoreCompile">
+  <!-- PrepareResources, а не CoreCompile: к моменту CoreCompile список ресурсов
+       уже разобран, и добавленное туда внутрь exe не попадает. -->
+  <Target Name="EmbedRuntime" BeforeTargets="PrepareResources">
     <PropertyGroup>
       <LangDll>..\DupoLang\bin\$(Configuration)\net48\DupoLang.dll</LangDll>
       <HostExe>..\DupoHost\bin\$(Configuration)\net48\DupoHost.exe</HostExe>

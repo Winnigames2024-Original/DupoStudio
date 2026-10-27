@@ -22,6 +22,25 @@ jobs:
       - name: Собрать
         run: msbuild DupoApp.sln /p:Configuration=Release /m
 
+      - name: Проверить, что студия — один файл
+        shell: pwsh
+        run: |
+          $exe = "DupoStudio/bin/Release/net48/DupoStudio.exe"
+          if (-not (Test-Path $exe)) { throw "Нет $exe" }
+
+          $kb = [math]::Round((Get-Item $exe).Length / 1KB)
+          Write-Host "DupoStudio.exe — $kb КБ"
+
+          $bytes = [System.IO.File]::ReadAllBytes((Resolve-Path $exe))
+          $text  = [System.Text.Encoding]::UTF8.GetString($bytes)
+
+          foreach ($res in @("DupoStudio.Embedded.DupoLang.dll", "DupoStudio.Embedded.DupoHost.exe")) {
+            if ($text.Contains($res)) { Write-Host "внутри: $res" }
+            else { throw "Ресурс $res не попал внутрь exe" }
+          }
+
+          if ($kb -lt 250) { throw "Подозрительно мало — всего $kb КБ" }
+
       - name: Выложить сборку
         uses: actions/upload-artifact@v4
         with:

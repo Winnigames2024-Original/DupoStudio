@@ -34,9 +34,17 @@ jobs:
           $kb = [math]::Round((Get-Item "DupoStudio.exe").Length / 1KB)
           Write-Host "DupoStudio.exe — $kb КБ"
 
-          # Внутри лежат DupoLang.dll и DupoHost.exe, так что меньше 200 КБ быть не может:
-          # если меньше — ресурсы не вшились, и на чужой машине exe не запустится.
-          if ($kb -lt 200) { throw "Рантайм не попал внутрь exe (всего $kb КБ)" }
+          # Имена вшитых ресурсов хранятся в метаданных сборки обычными строками,
+          # так что достаточно поискать их в байтах файла.
+          $bytes = [System.IO.File]::ReadAllBytes("DupoStudio.exe")
+          $text  = [System.Text.Encoding]::UTF8.GetString($bytes)
+
+          foreach ($res in @("DupoStudio.Embedded.DupoLang.dll", "DupoStudio.Embedded.DupoHost.exe")) {
+            if ($text.Contains($res)) { Write-Host "внутри: $res" }
+            else { throw "Ресурс $res не попал внутрь exe" }
+          }
+
+          if ($kb -lt 250) { throw "Подозрительно мало — всего $kb КБ" }
 
       # Описание не передаём: текст релиза, написанный вручную, остаётся как был —
       # прикладывается только сам exe. Исходники GitHub добавляет сам.
