@@ -100,7 +100,8 @@ namespace DupoSetup
             try
             {
                 if (uninstall) installer.Uninstall(dir);
-                else installer.Install(dir, payload, info.Desktop, info.Associations.Count > 0);
+                else installer.Install(dir, payload, info.Desktop,
+                                      info.Associations.Count > 0, !Has(args, "/notools"));
                 return 0;
             }
             catch (Exception ex)

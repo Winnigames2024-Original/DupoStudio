@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Net;
 using System.Text;
 using Microsoft.Win32;
 using DupoLang;
@@ -30,6 +32,12 @@ namespace DupoSetup
         // ---------------- установка ----------------
 
         public void Install(string targetDir, byte[] payload, bool desktopShortcut, bool associate)
+        {
+            Install(targetDir, payload, desktopShortcut, associate, true);
+        }
+
+        public void Install(string targetDir, byte[] payload, bool desktopShortcut,
+                            bool associate, bool withTools)
         {
             Directory.CreateDirectory(targetDir);
 
@@ -73,6 +81,9 @@ namespace DupoSetup
 
                 if (associate && exe != null) Associate(exe);
 
+                if (withTools) DownloadTools(targetDir, written);
+                Progress(95);
+
                 File.WriteAllLines(ListFile(targetDir), written.ToArray(), new UTF8Encoding(false));
                 Register(targetDir, uninstaller);
 
@@ -80,6 +91,56 @@ namespace DupoSetup
                 Log("Готово: " + targetDir);
             }
             finally { try { File.Delete(temp); } catch { } }
+        }
+
+        /// <summary>
+        /// Сборщик командной строки не лежит внутри установщика: он качается
+        /// с GitHub по ссылке на свежий выпуск, поэтому один архив подходит
+        /// любой версии. Нет сети — ставим без него, установка не срывается.
+        /// </summary>
+        void DownloadTools(string targetDir, List<string> written)
+        {
+            string toolsDir = Path.Combine(targetDir, "runtime", "tools");
+            string tmp = Path.Combine(Path.GetTempPath(), "dupo-tools-" + Guid.NewGuid().ToString("N") + ".zip");
+
+            try
+            {
+                ServicePointManager.SecurityProtocol =
+                    SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
+
+                Log("Качаю BuildTools с GitHub...");
+
+                using (var wc = new WebClient())
+                {
+                    wc.Headers.Add("User-Agent", "DupoSetup/" + Dupo.Version);
+                    wc.DownloadFile(BuildTools.DownloadUrl, tmp);
+                }
+
+                if (Directory.Exists(toolsDir)) Directory.Delete(toolsDir, true);
+                Directory.CreateDirectory(toolsDir);
+                ZipFile.ExtractToDirectory(tmp, toolsDir);
+
+                int count = 0;
+                foreach (string file in Directory.GetFiles(toolsDir, "*", SearchOption.AllDirectories))
+                {
+                    written.Add(Rel(targetDir, file));
+                    count++;
+                }
+
+                Log("BuildTools на месте: " + count + " файл(ов)");
+            }
+            catch (Exception ex)
+            {
+                Log("BuildTools не скачались (" + ex.Message + ").");
+                Log("Ничего страшного: студия предложит скачать их позже.");
+            }
+            finally { try { File.Delete(tmp); } catch { } }
+        }
+
+        static string Rel(string root, string file)
+        {
+            string rel = file.Substring(Path.GetFullPath(root).Length);
+            return rel.TrimStart('\\', '/').Replace('\\', '/');
         }
 
         string StartMenuPath()

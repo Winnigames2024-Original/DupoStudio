@@ -27,6 +27,7 @@ namespace DupoSetup
         readonly Button browse = new Button();
         readonly CheckBox desktop = new CheckBox();
         readonly CheckBox assoc = new CheckBox();
+        readonly CheckBox tools = new CheckBox();
         readonly ProgressBar bar = new ProgressBar();
         readonly RichTextBox log = new RichTextBox();
         readonly Button action = new Button();
@@ -116,11 +117,18 @@ namespace DupoSetup
             assoc.FlatStyle = FlatStyle.Flat;
             assoc.Visible = !uninstallMode && info.Associations.Count > 0;
 
-            bar.SetBounds(28, 228, 504, 8);
+            tools.Text = "Скачать сборщик командной строки (BuildTools) с GitHub";
+            tools.Checked = true;
+            tools.SetBounds(30, 212, 480, 22);
+            tools.ForeColor = Dim;
+            tools.FlatStyle = FlatStyle.Flat;
+            tools.Visible = !uninstallMode;
+
+            bar.SetBounds(28, 240, 504, 8);
             bar.Style = ProgressBarStyle.Continuous;
             bar.Visible = false;
 
-            log.SetBounds(28, 246, 504, 118);
+            log.SetBounds(28, 256, 504, 108);
             log.BackColor = Card;
             log.ForeColor = Dim;
             log.BorderStyle = BorderStyle.None;
@@ -154,7 +162,7 @@ namespace DupoSetup
 
             Controls.AddRange(new Control[] {
                 title, subtitle, pathLabel, pathBox, browse,
-                desktop, assoc, bar, log, runAfter, action, cancel });
+                desktop, assoc, tools, bar, log, runAfter, action, cancel });
         }
 
         static int card(int which) { return which == 0 ? 296 : 442; }
@@ -188,13 +196,14 @@ namespace DupoSetup
             action.Enabled = false;
             browse.Enabled = false;
             pathBox.Enabled = false;
-            desktop.Enabled = assoc.Enabled = false;
+            desktop.Enabled = assoc.Enabled = tools.Enabled = false;
 
             bar.Visible = true;
             log.Visible = true;
 
             bool wantDesktop = desktop.Checked;
             bool wantAssoc = assoc.Checked;
+            bool wantTools = tools.Checked;
 
             var worker = new Thread(delegate ()
             {
@@ -208,7 +217,7 @@ namespace DupoSetup
                 try
                 {
                     if (uninstallMode) installer.Uninstall(dir);
-                    else installer.Install(dir, payload, wantDesktop, wantAssoc);
+                    else installer.Install(dir, payload, wantDesktop, wantAssoc, wantTools);
 
                     installedDir = dir;
                     BeginInvoke(new Action(Done));
