@@ -1,0 +1,17 @@
+// Dupo Studio — пример веб-приложения
+import Dupo.Web
+
+print("=== Мой первый DupoApp ===")
+
+Web.Server site = new Web.Server(8080, "www", "index.html")
+
+if (Web.Server.Php.IsInstalled) {
+    print("PHP на месте: " + Web.Server.Php.Version)
+} else {
+    print("PHP не найден — скачиваю и ставлю...")
+    Web.Server.Php.Install()
+}
+
+site.Start()
+print("Сервер поднят: " + site.Url)
+Web.Open(site.Url)

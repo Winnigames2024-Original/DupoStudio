@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>7.3</LangVersion>
+    <AssemblyName>DupoStudio</AssemblyName>
+    <RootNamespace>DupoStudio</RootNamespace>
+    <CodePage>65001</CodePage>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <ApplicationIcon>Resources\dupo.ico</ApplicationIcon>
+    <Version>1.2.0</Version>
+    <Product>Dupo Studio</Product>
+    <Company>Winnigames2024</Company>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DupoLang\DupoLang.csproj" />
+    <ProjectReference Include="..\DupoRun\DupoRun.csproj" />
+    <!-- Хост собирается раньше студии, но как ссылка на сборку не подключается:
+         в нём те же типы, что в DupoLang.dll. Кладём его рядом после сборки. -->
+    <ProjectReference Include="..\DupoHost\DupoHost.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Target Name="CopyDupoHost" AfterTargets="Build">
+    <Copy SourceFiles="..\DupoHost\bin\$(Configuration)\net48\DupoHost.exe"
+          DestinationFolder="$(OutputPath)" ContinueOnError="true" />
+    <Copy SourceFiles="..\DupoHost\bin\$(Configuration)\net48\DupoHost.exe.config"
+          DestinationFolder="$(OutputPath)" ContinueOnError="true" />
+  </Target>
+
+</Project>

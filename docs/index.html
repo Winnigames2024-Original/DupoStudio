@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dupo Studio — конструктор приложений на DupoLang</title>
+<meta name="description" content="Dupo Studio — IDE и собственный язык DupoLang: веб-сервер с PHP из коробки, свой формат .dapp и сборка проекта в один exe.">
+<link rel="icon" href="assets/logo.svg">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="index.html" style="text-decoration:none;color:inherit">
+      <img src="assets/logo.svg" alt=""> Dupo Studio
+    </a>
+    <nav>
+      <a href="#features">Возможности</a>
+      <a href="#lang">Язык</a>
+      <a href="#dapp">Формат .dapp</a>
+      <a href="releases.html">Релизы</a>
+      <a href="https://github.com/Winnigames2024-Original/DupoStudio">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <div class="badge">Версия <b>1.2.0</b> · C# WinForms · .NET Framework 4.8</div>
+    <h1>Пишешь три строки —<br>получаешь <span class="grad">готовый .exe</span></h1>
+    <p class="lead">
+      Конструктор приложений со своим языком DupoLang. Веб-сервер и PHP ставятся сами,
+      проект пакуется в собственный формат .dapp и собирается в один самостоятельный
+      исполняемый файл — без DLL рядом.
+    </p>
+    <div class="btns">
+      <a class="btn primary" href="releases.html">↓&nbsp; Скачать</a>
+      <a class="btn ghost" href="https://github.com/Winnigames2024-Original/DupoStudio">Исходники на GitHub</a>
+    </div>
+
+    <div class="window">
+      <div class="bar">
+        <i class="dot r"></i><i class="dot y"></i><i class="dot g"></i>
+        <span class="name">main.dupolang</span>
+      </div>
+<pre><span class="c">// весь сайт с PHP — вот столько кода</span>
+<span class="k">import</span> <span class="t">Dupo.Web</span>
+
+<span class="t">Web.Server</span> site = <span class="k">new</span> <span class="t">Web.Server</span>(<span class="n">8080</span>, <span class="s">"www"</span>, <span class="s">"index.html"</span>)
+
+<span class="k">if</span> (<span class="t">Web.Server.Php</span>.IsInstalled == <span class="k">false</span>) {
+    <span class="t">Web.Server.Php</span>.<span class="f">Install</span>()
+}
+
+site.<span class="f">Start</span>()
+<span class="t">Web</span>.<span class="f">Open</span>(site.Url)</pre>
+    </div>
+  </div>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <h2>Что внутри</h2>
+    <p class="sub">Язык, среда и рантайм — три проекта в одном решении.</p>
+
+    <div class="grid">
+      <div class="card">
+        <div class="ico">⚙</div>
+        <h3>Свой язык</h3>
+        <p>Лексер, парсер, интерпретатор. Переменные с типом и <code>var</code>,
+           ветвления, циклы, функции, массивы, 19 встроенных функций.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🌐</div>
+        <h3>Веб-сервер в одну строку</h3>
+        <p>Статика с MIME-типами и защитой от выхода за корень, а <code>.php</code>
+           уходит в <code>php-cgi.exe</code> по честному CGI: <code>$_GET</code>,
+           <code>$_POST</code>, заголовки, редиректы.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🐘</div>
+        <h3>PHP ставится сам</h3>
+        <p><code>Web.Server.Php.Install()</code> читает список релизов с windows.php.net,
+           качает свежий NTS x64, распаковывает и пишет готовый <code>php.ini</code>.</p>
+      </div>
+      <div class="card">
+        <div class="ico">📦</div>
+        <h3>Формат .dapp</h3>
+        <p>Собственный контейнер: сигнатура, манифест, Deflate и CRC32 на каждую запись.
+           Не переименованный zip.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🚀</div>
+        <h3>Сборка в один exe</h3>
+        <p>Архив дописывается в хвост рантайма, в который язык вкомпилирован исходниками.
+           Один файл, никаких DLL.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🎨</div>
+        <h3>Тёмная среда</h3>
+        <p>Подсветка синтаксиса, нумерация строк, дерево проекта с цветами по типам,
+           консоль вывода, F5 — и поехали.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="lang" style="background:var(--bg-soft);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+  <div class="wrap">
+    <h2>Стандартная библиотека</h2>
+    <p class="sub">Четыре модуля — подключаются через <code>import</code>.</p>
+
+    <table>
+      <tr><th>Модуль</th><th>Что умеет</th></tr>
+      <tr>
+        <td><code>Dupo.Web</code></td>
+        <td><code>Web.Server</code> · <code>Web.Server.Php</code> · <code>Web.Open</code> ·
+            <code>Web.Get</code> · <code>Web.Download</code></td>
+      </tr>
+      <tr>
+        <td><code>Dupo.App</code></td>
+        <td><code>App.Export</code> · <code>App.Import</code> · <code>App.Unpack</code> ·
+            <code>App.Info</code> · <code>App.Files</code></td>
+      </tr>
+      <tr>
+        <td><code>Dupo.IO</code></td>
+        <td><code>IO.ReadFile</code> · <code>IO.WriteFile</code> · <code>IO.Exists</code> ·
+            <code>IO.MakeDir</code> · <code>IO.Files</code> · <code>IO.Dirs</code></td>
+      </tr>
+      <tr>
+        <td><code>Dupo.Sys</code></td>
+        <td><code>Sys.Run</code> · <code>Sys.Open</code> · <code>Sys.Env</code> ·
+            <code>Sys.Sleep</code> · <code>Sys.Time</code> · <code>Sys.Date</code></td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<section id="dapp">
+  <div class="wrap">
+    <h2>Как устроен .dapp</h2>
+    <p class="sub">Поток пишется и читается за один проход — без оглавления в конце файла.</p>
+
+    <div class="bytes">
+      <span class="hl">"DAPP"</span>
+      <span>uint16 версия</span>
+      <span>манифест UTF-8</span>
+      <span>int32 N записей</span>
+      <span>путь · размер · CRC32 · способ · данные</span>
+      <span class="hl">"DEND"</span>
+    </div>
+
+    <p style="margin-top:28px;color:var(--dim)">
+      Каждый файл жмётся Deflate и кладётся тем способом, который вышел меньше, —
+      картинки и готовые архивы не раздуваются. При распаковке считается CRC32:
+      не сошлось — архив объявляется повреждённым с именем конкретного файла.
+      Пути с <code>..</code> и абсолютные отбрасываются.
+    </p>
+
+    <h2 style="margin-top:56px">Сборка в один exe</h2>
+    <p class="sub">Windows игнорирует байты после PE-образа — этим и пользуемся.</p>
+
+    <div class="bytes">
+      <span>PE-образ DupoHost.exe</span>
+      <span class="hl">байты .dapp</span>
+      <span>int64 длина</span>
+      <span>uint32 CRC32</span>
+      <span class="hl">"DAPPBND1"</span>
+    </div>
+
+    <p style="margin-top:28px;color:var(--dim)">
+      При старте рантайм читает сам себя, находит метку, сверяет контрольную сумму,
+      разворачивает приложение во временную папку — один раз, дальше берёт готовое —
+      и запускает главный скрипт из манифеста.
+    </p>
+
+    <h2 style="margin-top:56px">Три способа отдать приложение</h2>
+    <table>
+      <tr><th>Способ</th><th>Что получается</th><th>Чем запускать</th></tr>
+      <tr><td>Собрать в один .exe</td><td><code>MyApp.exe</code></td><td>двойной клик</td></tr>
+      <tr><td>Экспорт в .dapp</td><td><code>MyApp.dapp</code></td><td><code>DupoRun.exe MyApp.dapp</code></td></tr>
+      <tr><td>Папка с файлами</td><td>exe + dll + исходники</td><td>двойной клик, код видно и правится</td></tr>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Dupo Studio · Winnigames2024</div>
+    <div>
+      <a href="https://github.com/Winnigames2024-Original/DupoStudio">GitHub</a> ·
+      <a href="releases.html">Релизы</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

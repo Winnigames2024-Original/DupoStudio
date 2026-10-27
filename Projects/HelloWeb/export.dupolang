@@ -1,0 +1,16 @@
+// Упаковка проекта в свой формат .dapp
+import Dupo.App
+
+print("Собираю архив приложения...")
+
+string file = App.Export("HelloWeb.dapp", "HelloWeb", "1.0", "Lilia")
+
+print("")
+print(App.Info(file))
+print("")
+print("Файлы внутри:")
+
+var names = App.Files(file)
+for (var i = 0; i < len(names); i = i + 1) {
+    print("  " + names[i])
+}

@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Поставить MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Восстановить пакеты
+        run: msbuild DupoApp.sln /t:Restore /p:Configuration=Release
+
+      - name: Собрать
+        run: msbuild DupoApp.sln /p:Configuration=Release /m
+
+      - name: Выложить сборку
+        uses: actions/upload-artifact@v4
+        with:
+          name: DupoStudio-build
+          path: DupoStudio/bin/Release/net48/
