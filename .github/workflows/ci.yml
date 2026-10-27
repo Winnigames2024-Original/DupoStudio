@@ -41,6 +41,27 @@ jobs:
 
           if ($kb -lt 250) { throw "Подозрительно мало — всего $kb КБ" }
 
+      - name: Проверить утилиты командной строки
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force "tools" | Out-Null
+          Copy-Item "DupoBuild/bin/Release/net48/DupoBuild.exe" "tools/DupoBuild.exe"
+          Copy-Item "DupoCs/bin/Release/net48/DupoLang.exe"     "tools/DupoLang.exe"
+          Copy-Item "DupoHost/bin/Release/net48/DupoHost.exe"   "tools/DupoHost.exe"
+
+          & "tools/DupoLang.exe" --check "Projects/HelloWeb/main.dupolang"
+          if ($LASTEXITCODE -ne 0) { throw "DupoLang.exe не проверил пример" }
+
+          & "tools/DupoLang.exe" "Projects/FilesDemo/main.dupolang" "tools/demo.cs"
+          if (-not (Test-Path "tools/demo.cs")) { throw "DupoLang.exe не выдал C#" }
+          Get-Content "tools/demo.cs" -TotalCount 25
+
+          & "tools/DupoBuild.exe" "Projects/HelloWeb" "tools/HelloWeb.exe" "name=HelloWeb"
+          if ($LASTEXITCODE -ne 0) { throw "DupoBuild.exe вернул $LASTEXITCODE" }
+
+          & "tools/DupoBuild.exe" --info "tools/HelloWeb.exe"
+          if ($LASTEXITCODE -ne 0) { throw "DupoBuild.exe --info вернул $LASTEXITCODE" }
+
       - name: Выложить сборку
         uses: actions/upload-artifact@v4
         with:

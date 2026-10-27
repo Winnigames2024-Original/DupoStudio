@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <!-- Имя файла именно DupoLang.exe, как просили. Библиотека DupoLang.dll
+         лежит в другой папке сборки, так что они не пересекаются. -->
+    <AssemblyName>DupoLang</AssemblyName>
+    <RootNamespace>DupoCs</RootNamespace>
+    <CodePage>65001</CodePage>
+    <ApplicationIcon>..\DupoStudio\Resources\dupo.ico</ApplicationIcon>
+    <Version>0.0.2</Version>
+    <Product>DupoLang to C#</Product>
+    <Company>Winnigames2024</Company>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\DupoLang\**\*.cs"
+             Exclude="..\DupoLang\bin\**\*.cs;..\DupoLang\obj\**\*.cs"
+             LinkBase="DupoLang" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+  </ItemGroup>
+
+</Project>
