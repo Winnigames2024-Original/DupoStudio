@@ -1,0 +1,12 @@
+// CsDemo — консольное приложение на C# (.NET Framework 4.8)
+using Dupo.CSharp
+
+print("Компилятор: " + CSharp.Version)
+
+if (CSharp.IsInstalled == false) {
+    print("csc.exe не найден — поставьте .NET Framework 4.8")
+} else {
+    string exe = CSharp.Build("src", "build/CsDemo.exe")
+    print("")
+    CSharp.Launch(exe, "")
+}

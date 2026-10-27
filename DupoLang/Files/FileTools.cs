@@ -257,5 +257,90 @@ namespace DupoLang
         }
 
         public static string ProjectDir() { return DupoRuntime.ProjectDir; }
+
+        // ---------- системные папки ----------
+
+        /// <summary>%LOCALAPPDATA% — сюда ставят программы без прав администратора.</summary>
+        public static string AppData()
+        {
+            return Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        }
+
+        /// <summary>%APPDATA% — перемещаемые настройки.</summary>
+        public static string RoamingData()
+        {
+            return Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        }
+
+        /// <summary>Рабочий стол пользователя.</summary>
+        public static string Desktop()
+        {
+            return Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+        }
+
+        /// <summary>Папка меню «Пуск» → «Программы».</summary>
+        public static string StartMenu()
+        {
+            return Environment.GetFolderPath(Environment.SpecialFolder.Programs);
+        }
+
+        /// <summary>Program Files.</summary>
+        public static string ProgramFiles()
+        {
+            return Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        }
+
+        /// <summary>Папка «Документы».</summary>
+        public static string Documents()
+        {
+            return Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        }
+
+        /// <summary>Создать ярлык.</summary>
+        public static string Shortcut(string target, string link)
+        {
+            return Shortcut(target, link, "", "");
+        }
+
+        /// <summary>Создать ярлык с аргументами и описанием.</summary>
+        public static string Shortcut(string target, string link, string args, string description)
+        {
+            string exe = P(target);
+            string lnk = P(link);
+            if (!lnk.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase)) lnk += ".lnk";
+
+            string dir = Path.GetDirectoryName(lnk);
+            if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+
+            try
+            {
+                Type shell = Type.GetTypeFromProgID("WScript.Shell");
+                if (shell == null) throw new InvalidOperationException("WScript.Shell недоступен");
+
+                object wsh = Activator.CreateInstance(shell);
+                object sc = shell.InvokeMember("CreateShortcut",
+                    System.Reflection.BindingFlags.InvokeMethod, null, wsh, new object[] { lnk });
+
+                Type t = sc.GetType();
+                Set(t, sc, "TargetPath", exe);
+                Set(t, sc, "WorkingDirectory", Path.GetDirectoryName(exe) ?? "");
+                if (!string.IsNullOrEmpty(args)) Set(t, sc, "Arguments", args);
+                if (!string.IsNullOrEmpty(description)) Set(t, sc, "Description", description);
+
+                t.InvokeMember("Save", System.Reflection.BindingFlags.InvokeMethod, null, sc, null);
+                Log("Ярлык: " + lnk);
+                return lnk;
+            }
+            catch (Exception ex)
+            {
+                Log("Ярлык не создался: " + ex.Message);
+                return "";
+            }
+        }
+
+        static void Set(Type t, object obj, string name, string value)
+        {
+            t.InvokeMember(name, System.Reflection.BindingFlags.SetProperty, null, obj, new object[] { value });
+        }
     }
 }

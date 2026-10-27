@@ -14,7 +14,8 @@ namespace DupoLang
         public static readonly string[] Available =
         {
             "Dupo.Web", "Dupo.App", "Dupo.Java", "Dupo.Tools", "Dupo.Resources",
-            "Dupo.Services", "Dupo.System.Files", "Dupo.System", "Dupo.IO", "Dupo.Sys"
+            "Dupo.Services", "Dupo.CSharp", "Dupo.Cpp",
+            "Dupo.System.Files", "Dupo.System", "Dupo.IO", "Dupo.Sys"
         };
 
         public static NativeNamespace Load(string module, Interp interp)
@@ -29,6 +30,8 @@ namespace DupoLang
                 case "Dupo.Tools": return Tools(interp);
                 case "Dupo.Resources": return ResourcesNs(interp);
                 case "Dupo.Services": return ServicesNs(interp);
+                case "Dupo.CSharp": return CSharpNs(interp);
+                case "Dupo.Cpp": return CppNs(interp);
                 case "Dupo.System.Files": return Files(interp);
                 case "Dupo.System": return SystemNs(interp);
             }
@@ -166,6 +169,28 @@ namespace DupoLang
             ns.Members["Service"] = new NativeType("Service", typeof(DupoService));
             ns.Members["ServiceLevel"] = new NativeType("ServiceLevel", typeof(ServiceLevel));
             ns.Backing = typeof(ServiceTools);
+            return ns;
+        }
+
+        // ---------------- Dupo.CSharp ----------------
+        static NativeNamespace CSharpNs(Interp interp)
+        {
+            CsTools.Log = interp.Print;
+
+            var ns = new NativeNamespace("CSharp");
+            ns.Target = CsTools.Instance;
+            ns.Backing = typeof(CsTools);
+            return ns;
+        }
+
+        // ---------------- Dupo.Cpp ----------------
+        static NativeNamespace CppNs(Interp interp)
+        {
+            CppTools.Log = interp.Print;
+
+            var ns = new NativeNamespace("Cpp");
+            ns.Target = CppTools.Instance;
+            ns.Backing = typeof(CppTools);
             return ns;
         }
 

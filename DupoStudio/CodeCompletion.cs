@@ -31,7 +31,9 @@ namespace DupoStudio
                 "Contains", "Exists", "Delete", "Copy", "Move", "Rename", "Size", "Modified",
                 "Name", "NameOnly", "Extension", "Folder", "Full", "Join", "Temp",
                 "MakeDir", "DirExists", "DeleteDir", "CopyDir",
-                "List", "Dirs", "Find", "Tree", "Count", "Zip", "Unzip", "Open", "ProjectDir" } },
+                "List", "Dirs", "Find", "Tree", "Count", "Zip", "Unzip", "Open", "ProjectDir",
+                "AppData", "RoamingData", "Desktop", "StartMenu", "ProgramFiles", "Documents",
+                "Shortcut" } },
             { "Java", new[] {
                 "Install", "Uninstall", "IsInstalled", "Version", "Folder",
                 "Compile", "Jar", "Run", "RunJar", "Build", "New" } },
@@ -52,6 +54,12 @@ namespace DupoStudio
                 "Program", "Arguments", "Folder", "SetLevel",
                 "Install", "Uninstall", "Start", "Stop", "Restart",
                 "Installed", "Running", "State", "NeedsAdmin", "Info" } },
+            { "CSharp", new[] {
+                "Build", "Forms", "Library", "Compile", "Run", "Launch",
+                "IsInstalled", "Version", "Folder", "Install", "CscPath", "Sources" } },
+            { "Cpp", new[] {
+                "Build", "Window", "Compile", "Run", "Launch", "Install", "Uninstall",
+                "IsInstalled", "Version", "Folder", "GppPath", "Sources" } },
             { "Services.ServiceLevel", new[] {
                 "SystemProcess", "LocalService", "NetworkService", "Delayed", "Manual",
                 "Interactive", "Disabled", "UserProcess", "Background", "Process" } },
@@ -63,7 +71,8 @@ namespace DupoStudio
             "break", "continue", "true", "false", "null", "new",
             "print", "println", "str", "num", "int", "round", "abs", "type", "len",
             "wait", "now", "random", "list", "push", "upper", "lower", "split",
-            "Web", "Files", "Java", "Tools", "App", "IO", "Sys", "Resources", "Services"
+            "Web", "Files", "Java", "Tools", "App", "IO", "Sys", "Resources", "Services",
+            "CSharp", "Cpp"
         };
 
         public CodeCompletion(CodeEditor owner)

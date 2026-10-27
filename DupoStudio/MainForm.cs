@@ -103,7 +103,8 @@ namespace DupoStudio
 
         void Create(bool web)
         {
-            string dir = web ? ProjectTemplates.CreateWeb(this) : ProjectTemplates.CreateJava(this);
+            // «Новый проект» открывает выбор шаблона, Java-кнопка — сразу Java.
+            string dir = web ? ProjectTemplates.New(this) : ProjectTemplates.CreateJava(this);
             if (dir != null) OpenProject(dir);
         }
 

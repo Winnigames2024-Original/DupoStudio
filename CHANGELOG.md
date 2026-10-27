@@ -19,6 +19,20 @@
   переменные, объявленные типом из API.
 - Пример `Projects/ServiceDemo`.
 
+### Типы проектов
+- Окно **«Новый проект»** как в Visual Studio: разделы слева, шаблоны
+  в середине, описание справа, имя и расположение снизу.
+- Десять шаблонов: DupoLang (веб, консоль, сервис), C# (консоль,
+  WinForms, библиотека), C++ (консоль, окно на WinAPI), Java
+  и **Установщик приложения** с папкой `payload`.
+- `Dupo.CSharp` — сборка C# через `csc.exe` из .NET Framework 4.8:
+  `Build`, `Forms`, `Library`, `Compile`, `Run`, `Launch`.
+- `Dupo.Cpp` — сборка C++ через g++: `Install` скачивает MinGW-w64,
+  `Build`, `Window`, `Compile`, `Run`, `Launch`.
+- `Dupo.System.Files` пополнился системными папками (`AppData`,
+  `Desktop`, `StartMenu`, `ProgramFiles`, `Documents`) и `Shortcut` —
+  из этого и собирается установщик.
+
 ## [0.0.1] — 2026-10-27
 
 Первый выпуск. Автор — Winnigames2024, продукт — Dupo Studio.

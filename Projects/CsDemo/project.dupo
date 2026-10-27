@@ -1,0 +1,9 @@
+# Свойства проекта Dupo Studio
+name=CsDemo
+product=Dupo Studio
+author=Winnigames2024
+version=1.0
+description=Пример сборки C# через Dupo.CSharp
+namespace=CsDemo
+javapackage=com.winnigames2024.csdemo
+singleexe=1

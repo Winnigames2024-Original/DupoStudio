@@ -181,7 +181,7 @@ namespace DupoStudio
 
         void NewProject()
         {
-            string dir = ProjectTemplates.CreateWeb(this);
+            string dir = ProjectTemplates.New(this);
             if (dir == null) return;
 
             OpenProject(dir);
