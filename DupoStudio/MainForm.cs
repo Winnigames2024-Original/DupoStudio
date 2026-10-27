@@ -110,7 +110,7 @@ namespace DupoStudio
             code.AppendLine();
             code.AppendLine("print(\"Запускаю " + name + "...\")");
             code.AppendLine();
-            code.AppendLine("Web.Server site = new Web.Server(8080, \"www\", \"index.html\")");
+            code.AppendLine("Web.Server site = new Web.Server(8080, \"www\", \"index\")");
             code.AppendLine();
             code.AppendLine("if (Web.Server.Php.IsInstalled == false) {");
             code.AppendLine("    Web.Server.Php.Install()");
@@ -716,7 +716,7 @@ namespace DupoStudio
                 "Dupo Studio — App Maker\r\n" +
                 "Язык DupoLang " + Dupo.Version + "\r\n\r\n" +
                 "import Dupo.Web\r\n" +
-                "Web.Server s = new Web.Server(8080, \"www\", \"index.html\")\r\n" +
+                "Web.Server s = new Web.Server(8080, \"www\", \"index\")\r\n" +
                 "Web.Server.Php.Install()\r\n" +
                 "s.Start()",
                 "О программе", MessageBoxButtons.OK, MessageBoxIcon.Information);

@@ -3,6 +3,25 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
 нумерация по [SemVer](https://semver.org/lang/ru/).
 
+## [1.4.0] — 2026-10-27
+
+### Добавлено
+- **Главный файл как в nginx.** Третий параметр `Web.Server` — имя без
+  расширения (`"index"`). Открытая папка отдаёт первый найденный
+  `index.html`, `index.php`, `index.js`, `.json`, `.txt`, `.xml`
+  вместо ошибки 404.
+- Адрес без расширения пробуется как файл: `/about` → `about.html`, `about.php`.
+- Папка без завершающей косой черты перенаправляется на `/папка/`,
+  чтобы не ломались относительные ссылки внутри страницы.
+- `site.SetIndex("index.php, index.html")` задаёт порядок перебора,
+  `site.IndexName` и `site.IndexFiles` показывают текущий.
+- `site.Fallback = true` — отдавать корневой index на любой неизвестный
+  адрес, для приложений на JavaScript.
+
+### Изменено
+- Имя с расширением (`"index.php"`) по-прежнему работает — оно просто
+  встаёт первым в очереди.
+
 ## [1.3.0] — 2026-10-27
 
 ### Добавлено
@@ -60,5 +79,6 @@
   вкладки, консоль вывода, F5.
 - `DupoRun` — консольный рантайм.
 
+[1.4.0]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.4.0
 [1.3.0]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.3.0
 [1.2.0]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v1.2.0

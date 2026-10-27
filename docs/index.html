@@ -27,7 +27,7 @@
 
 <div class="hero">
   <div class="wrap">
-    <div class="badge">Версия <b>1.3.0</b> · C# WinForms · .NET Framework 4.8</div>
+    <div class="badge">Версия <b>1.4.0</b> · C# WinForms · .NET Framework 4.8</div>
     <h1>Пишешь три строки —<br>получаешь <span class="grad">готовый .exe</span></h1>
     <p class="lead">
       Конструктор приложений со своим языком DupoLang. Веб-сервер, PHP и JDK
@@ -47,7 +47,7 @@
 <pre><span class="c">// весь сайт с PHP — вот столько кода</span>
 <span class="k">import</span> <span class="t">Dupo.Web</span>
 
-<span class="t">Web.Server</span> site = <span class="k">new</span> <span class="t">Web.Server</span>(<span class="n">8080</span>, <span class="s">"www"</span>, <span class="s">"index.html"</span>)
+<span class="t">Web.Server</span> site = <span class="k">new</span> <span class="t">Web.Server</span>(<span class="n">8080</span>, <span class="s">"www"</span>, <span class="s">"index"</span>)
 
 <span class="k">if</span> (<span class="t">Web.Server.Php</span>.IsInstalled == <span class="k">false</span>) {
     <span class="t">Web.Server.Php</span>.<span class="f">Install</span>()
@@ -74,9 +74,10 @@ site.<span class="f">Start</span>()
       <div class="card">
         <div class="ico">🌐</div>
         <h3>Веб-сервер в одну строку</h3>
-        <p>Статика с MIME-типами и защитой от выхода за корень, а <code>.php</code>
-           уходит в <code>php-cgi.exe</code> по честному CGI: <code>$_GET</code>,
-           <code>$_POST</code>, заголовки, редиректы.</p>
+        <p>Главный файл задаётся без расширения, и папки открываются как в nginx:
+           сервер сам находит <code>index.html</code>, <code>index.php</code> или
+           <code>index.js</code>. А <code>.php</code> уходит в <code>php-cgi.exe</code>
+           по честному CGI.</p>
       </div>
       <div class="card">
         <div class="ico">🐘</div>
@@ -129,7 +130,7 @@ site.<span class="f">Start</span>()
       <tr><th>Модуль</th><th>Что умеет</th></tr>
       <tr>
         <td><code>Dupo.Web</code></td>
-        <td><code>Web.Server</code> · <code>Web.Server.Php</code> · <code>Web.Open</code> ·
+        <td><code>Web.Server</code> · <code>SetIndex</code> · <code>Web.Server.Php</code> · <code>Web.Open</code> ·
             <code>Web.Get</code> · <code>Web.Download</code></td>
       </tr>
       <tr>

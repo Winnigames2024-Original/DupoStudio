@@ -44,7 +44,7 @@ C:\DupoApp\
 ```dupolang
 import Dupo.Web
 
-Web.Server site = new Web.Server(8080, "www", "index.html")
+Web.Server site = new Web.Server(8080, "www", "index")
 
 if (Web.Server.Php.IsInstalled == false) {
     Web.Server.Php.Install()
@@ -69,7 +69,7 @@ Web.Open(site.Url)
 
 | Что | Зачем |
 |---|---|
-| `new Web.Server(порт, "папка", "главный файл")` | создать сервер |
+| `new Web.Server(порт, "папка", "index")` | создать сервер |
 | `site.Start()` / `site.Stop()` | запустить / остановить |
 | `site.Url`, `site.Port`, `site.Root`, `site.Running` | свойства |
 | `Web.Server.Php.Install()` | скачать и поставить PHP |
@@ -81,6 +81,41 @@ Web.Open(site.Url)
 
 Сервер раздаёт статику сам, а `.php` отдаёт через `php-cgi.exe` по протоколу CGI —
 работают `$_GET`, `$_POST`, заголовки, редиректы.
+
+#### Главный файл — как в nginx
+
+Третий параметр — имя **без расширения**. Открыли в браузере папку — сервер сам
+ищет в ней `index.html`, потом `index.php`, `index.js` и так далее, и отдаёт
+первое, что нашлось. Никакого 404 на ровном месте.
+
+```dupolang
+Web.Server site = new Web.Server(8080, "www", "index")
+```
+
+| Адрес | Что отдаётся |
+|---|---|
+| `/` | `www/index.html`, а если его нет — `www/index.php`, `index.js`... |
+| `/about/` | `www/about/index.html`, иначе `www/about/index.php`... |
+| `/about` | перенаправление на `/about/`, чтобы не ломались относительные ссылки |
+| `/about.html` | сам файл |
+| `/about` (файла нет, папки нет) | пробует `about.html`, `about.php`, `about.js` |
+
+Порядок перебора: `.html` `.htm` `.php` `.js` `.json` `.txt` `.xml`.
+Если расширение указать явно — оно встанет первым:
+
+```dupolang
+// сначала index.php, потом остальные
+Web.Server site = new Web.Server(8080, "www", "index.php")
+
+// или задать порядок списком
+site.SetIndex("index.php, index.html")
+
+// для приложений на JavaScript: любой неизвестный адрес отдаёт корневой index
+site.Fallback = true
+```
+
+`site.IndexName` — имя без расширения, `site.IndexFiles` — весь перечень,
+который сервер перебирает.
 
 ### Модуль Dupo.App — формат .dapp
 

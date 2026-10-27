@@ -10,7 +10,7 @@ namespace DupoLang
 {
     /// <summary>
     /// Web.Server из модуля Dupo.Web — статика + PHP через CGI.
-    /// new Web.Server(8080, "www", "index.html")
+    /// new Web.Server(8080, "www", "index")  — имя главного файла без расширения.
     /// </summary>
     public class DupoWebServer : IDisposable
     {
@@ -19,7 +19,19 @@ namespace DupoLang
 
         public int Port { get; private set; }
         public string Root { get; private set; }
+
+        /// <summary>Как главный файл задали в конструкторе — "index" или "index.html".</summary>
         public string MainFile { get; private set; }
+
+        /// <summary>Имя главного файла без расширения — обычно "index".</summary>
+        public string IndexName { get; private set; }
+
+        /// <summary>Расширения, которые ищутся по порядку: index.html, index.php, index.js...</summary>
+        public string[] IndexExtensions = { ".html", ".htm", ".php", ".js", ".json", ".txt", ".xml" };
+
+        /// <summary>Отдавать корневой index вместо 404 — для приложений на JavaScript.</summary>
+        public bool Fallback;
+
         public bool Running { get; private set; }
         public string Url { get { return "http://localhost:" + Port + "/"; } }
 
@@ -29,15 +41,65 @@ namespace DupoLang
         /// <summary>Доступ к PHP: Web.Server.Php.Install()</summary>
         public static PhpTools Php { get { return PhpTools.Instance; } }
 
-        public DupoWebServer(int port) : this(port, "www", "index.html") { }
-        public DupoWebServer(int port, string root) : this(port, root, "index.html") { }
+        public DupoWebServer(int port) : this(port, "www", "index") { }
+        public DupoWebServer(int port, string root) : this(port, root, "index") { }
 
         public DupoWebServer(int port, string root, string mainFile)
         {
             Port = port <= 0 ? 8080 : port;
             Root = DupoRuntime.Resolve(string.IsNullOrEmpty(root) ? "www" : root);
-            MainFile = string.IsNullOrEmpty(mainFile) ? "index.html" : mainFile;
+            SetIndex(string.IsNullOrEmpty(mainFile) ? "index" : mainFile);
             LastPort = Port;
+        }
+
+        /// <summary>
+        /// Задаёт главный файл. Можно именем без расширения ("index") — тогда
+        /// перебираются все известные расширения, — или с расширением
+        /// ("index.php"), и тогда оно становится первым в очереди.
+        /// Принимает и список: "index.php, index.html".
+        /// </summary>
+        public void SetIndex(string value)
+        {
+            if (string.IsNullOrEmpty(value)) value = "index";
+            MainFile = value;
+
+            var order = new List<string>();
+            string name = null;
+
+            foreach (string raw in value.Split(',', ';', ' '))
+            {
+                string token = raw.Trim();
+                if (token.Length == 0) continue;
+
+                if (token[0] == '.')
+                {
+                    if (!order.Contains(token)) order.Add(token.ToLowerInvariant());
+                    continue;
+                }
+
+                string ext = Path.GetExtension(token);
+                if (name == null) name = Path.GetFileNameWithoutExtension(token);
+                if (ext.Length > 0 && !order.Contains(ext)) order.Add(ext.ToLowerInvariant());
+            }
+
+            IndexName = string.IsNullOrEmpty(name) ? "index" : name;
+
+            // то, что назвали явно, идёт первым; остальное — следом
+            foreach (string ext in IndexExtensions)
+                if (!order.Contains(ext)) order.Add(ext);
+
+            IndexExtensions = order.ToArray();
+        }
+
+        /// <summary>Перечень имён, которые сервер ищет в папке.</summary>
+        public string IndexFiles
+        {
+            get
+            {
+                var names = new List<string>();
+                foreach (string ext in IndexExtensions) names.Add(IndexName + ext);
+                return string.Join(", ", names.ToArray());
+            }
         }
 
         public void Start()
@@ -68,7 +130,8 @@ namespace DupoLang
 
             Log("Сервер запущен: " + Url);
             Log("Папка: " + Root);
-            Log("Главный файл: " + MainFile + (PhpTools.Instance.IsInstalled ? "   (PHP включён)" : ""));
+            Log("Главный файл: " + IndexName + ".*  →  " + IndexFiles);
+            if (PhpTools.Instance.IsInstalled) Log("PHP включён: " + PhpTools.Instance.Version);
         }
 
         public void Stop() { Dispose(); }
@@ -107,27 +170,87 @@ namespace DupoLang
 
         void Handle(HttpListenerContext ctx)
         {
-            string rel = Uri.UnescapeDataString(ctx.Request.Url.AbsolutePath).TrimStart('/');
-            rel = rel.Replace('/', Path.DirectorySeparatorChar);
+            string urlPath = Uri.UnescapeDataString(ctx.Request.Url.AbsolutePath);
+            string rel = urlPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
 
-            string full = string.IsNullOrEmpty(rel) ? Path.Combine(Root, MainFile) : Path.Combine(Root, rel);
-            if (Directory.Exists(full)) full = Path.Combine(full, MainFile);
-            full = Path.GetFullPath(full);
+            string full = Path.GetFullPath(string.IsNullOrEmpty(rel) ? Root : Path.Combine(Root, rel));
+            string rootFull = Path.GetFullPath(Root);
 
-            if (!full.StartsWith(Path.GetFullPath(Root), StringComparison.OrdinalIgnoreCase))
+            if (!full.StartsWith(rootFull, StringComparison.OrdinalIgnoreCase))
             {
+                Log(ctx.Request.HttpMethod + " " + ctx.Request.Url.PathAndQuery + "  → 403");
                 SendError(ctx, 403, "Выход за пределы папки сайта запрещён");
                 return;
             }
 
+            // Папка без завершающей косой черты: перенаправляем, иначе ссылки
+            // вроде href="style.css" внутри страницы будут считаться от родителя.
+            if (Directory.Exists(full) && rel.Length > 0 && !urlPath.EndsWith("/"))
+            {
+                ctx.Response.StatusCode = 301;
+                ctx.Response.RedirectLocation = urlPath + "/" + ctx.Request.Url.Query;
+                Log(ctx.Request.HttpMethod + " " + ctx.Request.Url.PathAndQuery + "  → 301 " + urlPath + "/");
+                return;
+            }
+
+            string file = Resolve(full);
+
+            if (file == null && Fallback) file = FindIndex(rootFull);
+
             Log(ctx.Request.HttpMethod + " " + ctx.Request.Url.PathAndQuery +
-                (File.Exists(full) ? "" : "  → 404"));
+                (file == null ? "  → 404" : "  → " + Short(file)));
 
-            if (!File.Exists(full)) { SendError(ctx, 404, "Не найдено: /" + rel.Replace('\\', '/')); return; }
+            if (file == null)
+            {
+                SendError(ctx, 404, "Не найдено: " + urlPath +
+                    "\nВ папке нет ни одного из файлов: " + IndexFiles);
+                return;
+            }
 
-            string ext = Path.GetExtension(full).ToLowerInvariant();
-            if (ext == ".php") ServePhp(ctx, full);
-            else SendFile(ctx, full, ext);
+            string ext = Path.GetExtension(file).ToLowerInvariant();
+            if (ext == ".php") ServePhp(ctx, file);
+            else SendFile(ctx, file, ext);
+        }
+
+        /// <summary>
+        /// Ищет, что отдать по пути: сам файл, index в папке или файл
+        /// с дописанным расширением. null — отдавать нечего.
+        /// </summary>
+        string Resolve(string full)
+        {
+            if (Directory.Exists(full)) return FindIndex(full);
+            if (File.Exists(full)) return full;
+
+            // /about → about.html, about.php, about.js...
+            if (Path.GetExtension(full).Length == 0)
+            {
+                foreach (string ext in IndexExtensions)
+                {
+                    string candidate = full + ext;
+                    if (File.Exists(candidate)) return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Первый существующий index.* в папке.</summary>
+        string FindIndex(string dir)
+        {
+            foreach (string ext in IndexExtensions)
+            {
+                string candidate = Path.Combine(dir, IndexName + ext);
+                if (File.Exists(candidate)) return candidate;
+            }
+            return null;
+        }
+
+        string Short(string file)
+        {
+            string rootFull = Path.GetFullPath(Root);
+            return file.Length > rootFull.Length
+                ? file.Substring(rootFull.Length).TrimStart(Path.DirectorySeparatorChar).Replace('\\', '/')
+                : Path.GetFileName(file);
         }
 
         // ---------- статика ----------

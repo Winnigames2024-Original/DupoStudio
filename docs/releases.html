@@ -45,8 +45,34 @@
 
       <div class="rel latest">
         <div class="rel-head">
-          <h3>v1.3.0</h3>
+          <h3>v1.4.0</h3>
           <span class="tag new">последняя</span>
+          <span class="tag">index как в nginx</span>
+        </div>
+        <p class="date">27 октября 2026</p>
+        <ul>
+          <li><b>Главный файл задаётся без расширения</b> — открытая папка отдаёт
+              первый найденный <code>index.html</code>, <code>index.php</code>,
+              <code>index.js</code> вместо ошибки 404.</li>
+          <li>Адрес без расширения пробуется как файл: <code>/about</code> → <code>about.html</code>.</li>
+          <li><code>site.SetIndex(...)</code> задаёт порядок, <code>site.Fallback</code> —
+              режим для приложений на JavaScript.</li>
+        </ul>
+        <div class="assets">
+          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/releases/latest">
+            <span class="ic">🖥</span><span class="nm">DupoStudio-v1.4.0-win-net48.zip</span>
+            <span class="meta">собранная студия</span>
+          </a>
+          <a class="asset" href="https://github.com/Winnigames2024-Original/DupoStudio/archive/refs/tags/v1.4.0.zip">
+            <span class="ic">📄</span><span class="nm">Source code (zip)</span>
+            <span class="meta">исходники</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="rel">
+        <div class="rel-head">
+          <h3>v1.3.0</h3>
           <span class="tag">Java и файлы</span>
         </div>
         <p class="date">27 октября 2026</p>

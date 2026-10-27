@@ -10,7 +10,7 @@
     <CodePage>65001</CodePage>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <ApplicationIcon>Resources\dupo.ico</ApplicationIcon>
-    <Version>1.3.0</Version>
+    <Version>1.4.0</Version>
     <Product>Dupo Studio</Product>
     <Company>Winnigames2024</Company>
   </PropertyGroup>
