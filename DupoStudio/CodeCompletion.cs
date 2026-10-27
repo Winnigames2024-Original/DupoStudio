@@ -181,10 +181,10 @@ namespace DupoStudio
             if (word.Length < 2) return;
             if (InText()) return;
 
-            var names = Candidates();
-            if (names.Count == 0 || (names.Count == 1 && names[0] == word)) return;
+            var hints = Candidates();
+            if (hints.Count == 0 || (hints.Count == 1 && hints[0] == word)) return;
 
-            Show(WordStart(), names);
+            Show(WordStart(), hints);
         }
 
         /// <summary>Подсказывать ли по ходу набора.</summary>
