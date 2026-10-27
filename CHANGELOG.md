@@ -3,7 +3,7 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
 нумерация по [SemVer](https://semver.org/lang/ru/).
 
-## [Не выпущено]
+## [0.0.2] — 2026-10-27
 
 ### Сервисы
 - Модуль `Dupo.Services`: `Services.Service` и десять типов
@@ -98,4 +98,5 @@
 - `DupoStudioSetup.exe` — установка для пользователя, без прав администратора:
   ярлыки, запись в список программ, связывание `.dupolang` и `.dapp`, удаление.
 
+[0.0.2]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v0.0.2
 [0.0.1]: https://github.com/Winnigames2024-Original/DupoStudio/releases/tag/v0.0.1
