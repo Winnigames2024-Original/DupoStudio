@@ -73,9 +73,14 @@ jobs:
           if ($proc.ExitCode -ne 0) { throw "Сборка установщика вернула $($proc.ExitCode)" }
 
           if (-not (Test-Path "DupoStudioSetup.exe")) { throw "Установщик не собрался" }
-          $kb = [math]::Round((Get-Item "DupoStudioSetup.exe").Length / 1KB)
-          Write-Host "DupoStudioSetup.exe — $kb КБ"
-          if ($kb -lt 400) { throw "Установщик без начинки — всего $kb КБ" }
+
+          # Начинка сжимается, поэтому про абсолютный размер гадать бессмысленно:
+          # сравниваем с пустым установщиком — разница и есть приложенный архив.
+          $baseKb = [math]::Round((Get-Item $setup).Length / 1KB)
+          $madeKb = [math]::Round((Get-Item "DupoStudioSetup.exe").Length / 1KB)
+          Write-Host "DupoSetup.exe — $baseKb КБ, с начинкой — $madeKb КБ"
+
+          if ($madeKb -le $baseKb + 50) { throw "Начинка не приложилась: было $baseKb КБ, стало $madeKb КБ" }
 
       # Описание не передаём: текст релиза, написанный вручную, остаётся как был.
       - name: Опубликовать релиз
