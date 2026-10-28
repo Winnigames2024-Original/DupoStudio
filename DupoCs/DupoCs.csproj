@@ -9,7 +9,7 @@
     <AssemblyName>DupoLang</AssemblyName>
     <RootNamespace>DupoCs</RootNamespace>
     <CodePage>65001</CodePage>
-    <Version>0.0.6</Version>
+    <Version>0.0.7</Version>
     <Product>Dupo Studio</Product>
     <Company>Winnigames2024</Company>
     <Authors>Winnigames2024</Authors>
