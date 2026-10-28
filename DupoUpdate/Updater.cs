@@ -42,6 +42,9 @@ namespace DupoUpdate
         /// <summary>Файл, который заменит update.exe после выхода.</summary>
         public string Staged { get; private set; }
 
+        /// <summary>Папка, куда Plan сложил скачанное.</summary>
+        public string Staging { get; private set; }
+
         public Updater(UninstallData info, string folder)
         {
             data = info;
@@ -155,6 +158,116 @@ namespace DupoUpdate
             Progress(100);
 
             return changed;
+        }
+
+        /// <summary>
+        /// Скачать всё новое в отдельную папку, не трогая работающие файлы.
+        /// Список замен потом отдаётся Batch — он и поставит их на место.
+        /// </summary>
+        public List<Swap> Plan(Found found)
+        {
+            var swaps = new List<Swap>();
+            if (found == null) return swaps;
+
+            string staging = Path.Combine(Path.GetTempPath(),
+                                          "dupo-staged-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(staging);
+            Staging = staging;
+
+            // 1. Само приложение.
+            string app = string.IsNullOrEmpty(data.MainExe)
+                ? "DupoStudio.exe"
+                : Path.GetFileName(data.MainExe);
+
+            Take(found, swaps, staging, app, Path.Combine(dir, app));
+            Progress(35);
+
+            // 2. Сам обновлятор — его меняет тот же пакетный файл, после нашего выхода.
+            Take(found, swaps, staging, "update.exe", Path.Combine(dir, "update.exe"));
+            Progress(50);
+
+            // 3. Удалятор, если он рядом лежит.
+            if (File.Exists(Path.Combine(dir, "uninstall.exe")))
+                Take(found, swaps, staging, "uninstall.exe", Path.Combine(dir, "uninstall.exe"));
+            Progress(60);
+
+            // 4. Инструменты сборки — архив разбирается на отдельные файлы.
+            TakeTools(found, swaps, staging);
+            Progress(90);
+
+            if (swaps.Count == 0)
+            {
+                try { Directory.Delete(staging, true); } catch { }
+                Staging = null;
+            }
+
+            Progress(100);
+            return swaps;
+        }
+
+        /// <summary>Скачать один файл выпуска в папку ожидания.</summary>
+        void Take(Found found, List<Swap> swaps, string staging, string asset, string target)
+        {
+            string url;
+            if (!found.Assets.TryGetValue(asset, out url))
+            {
+                Log("В выпуске нет " + asset + " — пропускаю.");
+                return;
+            }
+
+            try
+            {
+                Log("Качаю " + asset + "...");
+                string temp = Download(url);
+
+                string to = Path.Combine(staging, asset);
+                File.Copy(temp, to, true);
+                Clean(temp);
+
+                swaps.Add(new Swap(to, target));
+            }
+            catch (Exception ex) { Log(asset + " не скачался: " + ex.Message); }
+        }
+
+        /// <summary>Разобрать BuildTools.zip в папку ожидания, файл за файлом.</summary>
+        void TakeTools(Found found, List<Swap> swaps, string staging)
+        {
+            string url;
+            if (!found.Assets.TryGetValue("BuildTools.zip", out url))
+            {
+                Log("В выпуске нет BuildTools.zip — инструменты не трогаю.");
+                return;
+            }
+
+            string temp = null;
+            try
+            {
+                Log("Качаю BuildTools.zip...");
+                temp = Download(url);
+
+                string into = Path.Combine(staging, "tools");
+                Directory.CreateDirectory(into);
+
+                string tools = Path.Combine(dir, "runtime", "tools");
+
+                using (var zip = ZipFile.OpenRead(temp))
+                {
+                    foreach (var entry in zip.Entries)
+                    {
+                        if (entry.Length == 0 && entry.Name.Length == 0) continue;
+
+                        string rel = entry.FullName.Replace('/', Path.DirectorySeparatorChar);
+
+                        string to = Path.Combine(into, rel);
+                        Directory.CreateDirectory(Path.GetDirectoryName(to));
+                        entry.ExtractToFile(to, true);
+
+                        swaps.Add(new Swap(to, Path.Combine(tools, rel)));
+                    }
+                }
+            }
+            catch (Exception ex) { Log("Инструменты не скачались: " + ex.Message); }
+            finally { Clean(temp); }
         }
 
         bool App(Found found)
@@ -364,7 +477,7 @@ namespace DupoUpdate
 
                 File.WriteAllText(bat, sb.ToString(), Encoding.GetEncoding(866));
 
-                var psi = new ProcessStartInfo("cmd.exe", "/c \"" + bat + "\"");
+                var psi = new ProcessStartInfo("cmd.exe", "/c call \"" + bat + "\"");
                 psi.UseShellExecute = false;
                 psi.CreateNoWindow = true;
                 Process.Start(psi);

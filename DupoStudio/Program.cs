@@ -51,6 +51,9 @@ namespace DupoStudio
 
             Settings.Load();
 
+            // Тихий обновлятор должен работать, пока работает студия.
+            Watcher.Ensure();
+
             // Папка в командной строке важнее настроек.
             string project = args != null && args.Length > 0 && Directory.Exists(args[0])
                 ? args[0]

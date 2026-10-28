@@ -23,6 +23,7 @@ namespace DupoUpdate
         readonly Label step = new Label();
         readonly Button go = new Button();
         readonly Button close = new Button();
+        readonly CheckBox auto = new CheckBox();
 
         Found found;
         Updater updater;
@@ -38,7 +39,7 @@ namespace DupoUpdate
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(520, 356);
+            ClientSize = new Size(520, 388);
             BackColor = SystemColors.Control;
             Font = SystemFonts.MessageBoxFont;
 
@@ -70,27 +71,72 @@ namespace DupoUpdate
             notes.BackColor = SystemColors.Window;
             notes.SetBounds(20, 110, 480, 160);
 
-            step.Bounds = new Rectangle(20, 276, 480, 18);
+            auto.Text = "Проверять и ставить обновления самостоятельно";
+            auto.SetBounds(19, 276, 480, 22);
+            auto.Checked = AutoUpdate.Wanted(data) && AutoUpdate.Registered;
+            auto.CheckedChanged += delegate { Autostart(); };
+
+            step.Bounds = new Rectangle(20, 304, 480, 18);
             step.ForeColor = SystemColors.GrayText;
 
-            bar.SetBounds(20, 296, 480, 16);
+            bar.SetBounds(20, 324, 480, 16);
             bar.Style = ProgressBarStyle.Continuous;
 
             go.Text = "Обновить";
-            go.SetBounds(314, 320, 93, 26);
+            go.SetBounds(314, 350, 93, 26);
             go.UseVisualStyleBackColor = true;
             go.Enabled = false;
             go.Click += delegate { Go(); };
 
             close.Text = "Закрыть";
-            close.SetBounds(411, 320, 93, 26);
+            close.SetBounds(411, 350, 93, 26);
             close.UseVisualStyleBackColor = true;
             close.Click += delegate { Close(); };
 
             AcceptButton = go;
             CancelButton = close;
 
-            Controls.AddRange(new Control[] { title, state, caption, notes, step, bar, go, close });
+            Controls.AddRange(new Control[] { title, state, caption, notes,
+                                              auto, step, bar, go, close });
+        }
+
+        /// <summary>
+        /// Галочка заведует записью в автозапуске: с ней update.exe поднимается
+        /// вместе с системой и ставит новые версии сам, без окон.
+        /// </summary>
+        void Autostart()
+        {
+            AutoUpdate.Want(data, dir, auto.Checked);
+
+            if (!auto.Checked) return;
+
+            if (!AutoUpdate.Registered)
+            {
+                MessageBox.Show(this,
+                    "Запись в автозапуск не получилась — возможно, её не разрешает система.",
+                    Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Сразу и запускаем, чтобы не ждать перезагрузки.
+            Watcher();
+        }
+
+        /// <summary>Поднять тихий update.exe -autoupdate, если он ещё не работает.</summary>
+        void Watcher()
+        {
+            try
+            {
+                string exe = Path.Combine(dir, "update.exe");
+                if (!File.Exists(exe)) return;
+
+                var psi = new System.Diagnostics.ProcessStartInfo(exe, "-autoupdate");
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+                psi.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch { }
         }
 
         // ------------------------------------------------------------------

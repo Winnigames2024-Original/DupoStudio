@@ -25,6 +25,8 @@ namespace DupoSetup
 
         const string UninstallRoot = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\";
         const string ClassesRoot = @"Software\Classes\";
+        const string RunRoot = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        const string RunValue = "DupoStudioUpdate";
 
         /// <summary>Список установленного — по нему же потом удаляем.</summary>
         static string ListFile(string dir) { return Path.Combine(dir, "installed.txt"); }
@@ -312,6 +314,31 @@ namespace DupoSetup
                 }
             }
             catch { }
+
+            Autostart(targetDir);
+        }
+
+        /// <summary>
+        /// Прописать update.exe в автозапуск. Он поднимается вместе с системой
+        /// с ключом -autoupdate, тихо проверяет новые версии и ставит их сам.
+        /// Выключается галочкой в окне обновления.
+        /// </summary>
+        void Autostart(string targetDir)
+        {
+            try
+            {
+                string exe = Path.Combine(targetDir, "update.exe");
+                if (!File.Exists(exe)) return;
+
+                using (RegistryKey k = Registry.CurrentUser.CreateSubKey(RunRoot))
+                {
+                    if (k == null) return;
+                    k.SetValue(RunValue, "\"" + exe + "\" -autoupdate");
+                }
+
+                Log("Автообновление включено.");
+            }
+            catch (Exception ex) { Log("Автозапуск обновлятора не прописался: " + ex.Message); }
         }
 
         // ---------------- удаление ----------------
@@ -340,6 +367,14 @@ namespace DupoSetup
             try { if (File.Exists(DesktopPath())) File.Delete(DesktopPath()); } catch { }
 
             try { Registry.CurrentUser.DeleteSubKeyTree(UninstallRoot + info.AppId, false); } catch { }
+
+            // Автообновление без программы ни к чему.
+            try
+            {
+                using (RegistryKey k = Registry.CurrentUser.OpenSubKey(RunRoot, true))
+                    if (k != null && k.GetValue(RunValue) != null) k.DeleteValue(RunValue, false);
+            }
+            catch { }
 
             string progId = "DupoStudio" + DappPackage.SafeName(info.Folder);
             foreach (string ext in info.Associations)

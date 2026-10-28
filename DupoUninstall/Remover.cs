@@ -11,6 +11,8 @@ namespace DupoUninstall
     public class Remover
     {
         const string UninstallRoot = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\";
+        const string RunRoot = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        const string RunValue = "DupoStudioUpdate";
         const string ClassesRoot = @"Software\Classes\";
 
         readonly UninstallData data;
@@ -122,6 +124,15 @@ namespace DupoUninstall
                 try { Registry.CurrentUser.DeleteSubKeyTree(ClassesRoot + progId, false); }
                 catch { }
             }
+
+            // Автообновление поднимается вместе с системой — без программы
+            // оно будет каждый раз стучаться в пустоту.
+            try
+            {
+                using (RegistryKey k = Registry.CurrentUser.OpenSubKey(RunRoot, true))
+                    if (k != null && k.GetValue(RunValue) != null) k.DeleteValue(RunValue, false);
+            }
+            catch { }
 
             Log("Записи в реестре удалены");
         }

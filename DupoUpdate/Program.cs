@@ -11,6 +11,8 @@ namespace DupoUpdate
     /// update.exe — обновление приложения с GitHub.
     ///
     ///   update.exe             — окно с проверкой и кнопкой «Обновить»
+    ///   update.exe -autoupdate — тихо следит за новыми версиями и ставит их сам;
+    ///                            в этом виде он и прописан в автозапуск
     ///   update.exe /check      — только проверить; код 10 — есть новая версия
     ///   update.exe /silent     — обновить без окон
     ///
@@ -27,6 +29,10 @@ namespace DupoUpdate
         {
             string dir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
             UninstallData data = UninstallData.Load(dir) ?? Guess(dir);
+
+            // Главный режим: запуск вместе с системой, без окон.
+            if (Has(args, "-autoupdate") || Has(args, "/autoupdate"))
+                return AutoUpdate.Run(data, dir);
 
             bool check = Has(args, "/check");
             bool silent = Has(args, "/silent") || Has(args, "/s");
