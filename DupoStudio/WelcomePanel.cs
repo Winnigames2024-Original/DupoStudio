@@ -24,6 +24,7 @@ namespace DupoStudio
         const int Pad = 40;          // отступ от краёв
         const int Gap = 28;          // между колонками
         const int LeftWidth = 420;   // колонка действий
+        const int RightMax = 760;    // шире список недавних не растягиваем
         const int TileHeight = 72;
 
         Panel left = new Panel();
@@ -40,6 +41,10 @@ namespace DupoStudio
             AutoScroll = true;
             DoubleBuffered = true;
             SetStyle(ControlStyles.SupportsTransparentBackColor, true);
+
+            // Фон рисуем сами, значит и перерисовывать его при растягивании
+            // окна тоже нам: иначе уклон и пятно остаются полосами.
+            SetStyle(ControlStyles.ResizeRedraw, true);
 
             Paper();
             Build();
@@ -99,14 +104,16 @@ namespace DupoStudio
             var title = new Label
             {
                 Text = "Dupo Studio",
-                Font = new Font("Segoe UI Semibold", 25f),
+                Font = new Font("Segoe UI Semibold", 23f),
                 ForeColor = Theme.Text,
                 AutoSize = true,
                 BackColor = Color.Transparent,
-                Location = new Point(70, y + 2)
+                Location = new Point(70, y)
             };
             left.Controls.Add(title);
 
+            // Подпись ставим под заголовок по его настоящей высоте: на другом
+            // размере шрифта системы она иначе наезжает на название.
             var sub = new Label
             {
                 Text = "Конструктор приложений · версия " + Dupo.Version,
@@ -114,11 +121,11 @@ namespace DupoStudio
                 ForeColor = Theme.Dim,
                 AutoSize = true,
                 BackColor = Color.Transparent,
-                Location = new Point(72, y + 40)
+                Location = new Point(72, y + title.Height - 2)
             };
             left.Controls.Add(sub);
 
-            y += 56 + 34;
+            y += Math.Max(56, sub.Bottom - y) + 34;
 
             left.Controls.Add(Tile("Новый проект", "DupoLang, C#, C++, Python, Java, установщик",
                                    Glyph.Plus, y, true, delegate { Fire(NewProject); }));
@@ -375,21 +382,12 @@ namespace DupoStudio
             // Узкое окно — одна колонка, недавние уходят под действия.
             bool narrow = w < LeftWidth + Gap + 320 + Pad * 2;
 
-            int top = Math.Max(Pad, Math.Min(96, (h - left.Height) / 2));
-
+            // Ширины считаем первыми: от них зависит высота правой колонки,
+            // а от неё — куда ставить обе.
             left.Width = narrow ? Math.Max(260, w - Pad * 2) : LeftWidth;
-            left.Location = new Point(Pad, top);
-
-            if (narrow)
-            {
-                right.Width = left.Width;
-                right.Location = new Point(Pad, top + left.Height + Gap);
-            }
-            else
-            {
-                right.Width = Math.Max(300, w - Pad * 2 - LeftWidth - Gap);
-                right.Location = new Point(Pad + LeftWidth + Gap, top);
-            }
+            right.Width = narrow
+                ? left.Width
+                : Math.Min(RightMax, Math.Max(300, w - Pad * 2 - LeftWidth - Gap));
 
             recentBox.Width = right.Width;
             recentList.Width = recentBox.Width - 20;
@@ -403,6 +401,24 @@ namespace DupoStudio
 
             recentBox.Height = boxHeight;
             right.Height = boxHeight;
+
+            // Весь блок — по центру окна, а не прижат к верху: на большом
+            // мониторе иначе остаётся полэкрана пустоты.
+            int block = narrow
+                ? left.Height + Gap + right.Height
+                : Math.Max(left.Height, right.Height);
+
+            int top = Math.Max(Pad, (h - block) / 2);
+
+            // И по горизонтали тоже: на широком мониторе две колонки
+            // расползались бы по краям, а читать их потом через всю ширину.
+            int wide = narrow ? left.Width : left.Width + Gap + right.Width;
+            int x = Math.Max(Pad, (w - wide) / 2);
+
+            left.Location = new Point(x, top);
+            right.Location = narrow
+                ? new Point(x, top + left.Height + Gap)
+                : new Point(x + left.Width + Gap, top);
         }
 
         // ------------------------------------------------------------------
@@ -484,6 +500,7 @@ namespace DupoStudio
                 BackColor = Color.Transparent;
                 DoubleBuffered = true;
                 SetStyle(ControlStyles.SupportsTransparentBackColor, true);
+                SetStyle(ControlStyles.ResizeRedraw, true);
             }
 
             protected override void OnPaint(PaintEventArgs e)
@@ -512,6 +529,7 @@ namespace DupoStudio
                 BackColor = Color.Transparent;
                 DoubleBuffered = true;
                 SetStyle(ControlStyles.SupportsTransparentBackColor, true);
+                SetStyle(ControlStyles.ResizeRedraw, true);
             }
 
             protected override void OnPaint(PaintEventArgs e)
@@ -548,6 +566,7 @@ namespace DupoStudio
                 BackColor = Color.Transparent;
                 DoubleBuffered = true;
                 SetStyle(ControlStyles.SupportsTransparentBackColor, true);
+                SetStyle(ControlStyles.ResizeRedraw, true);
             }
 
             protected override void OnPaint(PaintEventArgs e)
@@ -596,6 +615,7 @@ namespace DupoStudio
                 DoubleBuffered = true;
                 Cursor = Cursors.Hand;
                 SetStyle(ControlStyles.SupportsTransparentBackColor, true);
+                SetStyle(ControlStyles.ResizeRedraw, true);
             }
 
             protected override void OnMouseEnter(EventArgs e) { hot = true; Invalidate(); base.OnMouseEnter(e); }
