@@ -377,6 +377,10 @@ def page_index(releases, repo):
         body.append('<p>Список не прочитался — посмотрите '
                     '<a href="https://github.com/%s/releases">выпуски на GitHub</a>.</p>' % repo)
 
+    body.append('<p class="note" style="margin-top:26px">Адрес страницы версии — '
+                '<code>/release/0.0.6/</code>. Ссылка с буквой v, как в теге '
+                '(<code>/release/v0.0.6/</code>), тоже работает и ведёт сюда же. '
+                'А <code>/release/latest/</code> всегда открывает последнюю.</p>')
     body.append('<p style="margin-top:24px"><a class="btn" href="%sreleases/">К загрузкам</a></p>' % up)
     body.append('</div></section>')
 
@@ -384,14 +388,32 @@ def page_index(releases, repo):
 
 
 def page_redirect(target, up):
+    """Страница-перенаправление. Её почти не видно, но выглядеть она должна
+    как часть сайта: редирект может и не сработать с отключённым скриптом."""
     return (
         '<!DOCTYPE html>\n<html lang="ru">\n<head>\n<meta charset="utf-8">\n'
-        '<meta http-equiv="refresh" content="0; url=%s">\n'
-        '<link rel="canonical" href="%s">\n'
-        '<title>Переход — Dupo Studio</title>\n</head>\n<body>\n'
-        '<p>Страница переехала: <a href="%s">%s</a></p>\n'
-        '<script>location.replace(%s)</script>\n</body>\n</html>\n'
-        % (target, target, target, target, json.dumps(target))
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+        '<meta http-equiv="refresh" content="0; url=%(t)s">\n'
+        '<meta name="robots" content="noindex">\n'
+        '<link rel="canonical" href="%(t)s">\n'
+        '<link rel="icon" href="%(up)sassets/logo.svg">\n'
+        '<link rel="stylesheet" href="%(up)sassets/style.css">\n'
+        '<title>Переход — Dupo Studio</title>\n'
+        '<style>\n'
+        '  body { display: flex; align-items: center; justify-content: center;\n'
+        '         min-height: 100vh; margin: 0; padding: 24px; text-align: center; }\n'
+        '  .go { max-width: 420px; }\n'
+        '  .go p { color: var(--dim); }\n'
+        '  .go a { color: var(--accent); }\n'
+        '</style>\n'
+        '</head>\n<body>\n'
+        '<div class="go">\n'
+        '<p>Открываю страницу версии...</p>\n'
+        '<p>Не переадресовало? <a href="%(t)s">Перейти вручную</a></p>\n'
+        '</div>\n'
+        '<script>location.replace(%(j)s)</script>\n'
+        '</body>\n</html>\n'
+        % {"t": target, "up": up, "j": json.dumps(target)}
     )
 
 
@@ -424,6 +446,14 @@ def main():
             continue
         write(os.path.join(root, ver, "index.html"),
               page_version(rel, args.repo, i == 0))
+
+        # Тег называется v0.0.6, а адрес — /release/0.0.6/. Ссылку с буквой
+        # копируют из GitHub постоянно, поэтому /release/v0.0.6/ тоже
+        # заводим — он просто ведёт на адрес без буквы.
+        tag = str(rel.get("tag_name") or "")
+        if tag != ver and re.match(r"^v[0-9][0-9A-Za-z._-]*$", tag):
+            write(os.path.join(root, tag, "index.html"),
+                  page_redirect("../" + ver + "/", "../../"))
 
     write(os.path.join(root, "index.html"), page_index(releases, args.repo))
 
