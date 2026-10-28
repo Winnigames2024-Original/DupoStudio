@@ -17,6 +17,9 @@ namespace DupoUpdate
         public string Tag = "";
         public string Version = "";
         public string Notes = "";
+
+        /// <summary>Отметка сборки из version.json выпуска.</summary>
+        public Stamp Build = new Stamp();
         public readonly Dictionary<string, string> Assets =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -93,7 +96,37 @@ namespace DupoUpdate
                 }
             }
 
+            found.Build = Mark(found);
             return found;
+        }
+
+        /// <summary>
+        /// Отметка сборки выпуска. Файл version.json лежит среди файлов
+        /// выпуска; если его нет — значит, выпуск собран до того, как
+        /// появился счётчик, и номером сборки считаем первый.
+        /// </summary>
+        static Stamp Mark(Found found)
+        {
+            string url;
+            if (found.Assets.TryGetValue(Stamp.FileName, out url))
+            {
+                try
+                {
+                    using (var wc = new WebClient())
+                    {
+                        wc.Headers.Add("User-Agent", "DupoStudio-update");
+                        wc.Encoding = Encoding.UTF8;
+
+                        var mark = Stamp.Parse(wc.DownloadString(url));
+                        if (mark.Version.Length == 0) mark.Version = found.Version;
+                        if (mark.Updated < 1) mark.Updated = 1;
+                        return mark;
+                    }
+                }
+                catch { }
+            }
+
+            return new Stamp(found.Version, 1);
         }
 
         static string Unescape(string s)
@@ -154,7 +187,7 @@ namespace DupoUpdate
             changed |= Companion(found, "uninstall.exe");
             Progress(95);
 
-            if (changed) Stamp(found);
+            if (changed) Record(found);
             Progress(100);
 
             return changed;
@@ -189,6 +222,10 @@ namespace DupoUpdate
             // 3. Удалятор, если он рядом лежит.
             if (File.Exists(Path.Combine(dir, "uninstall.exe")))
                 Take(found, swaps, staging, "uninstall.exe", Path.Combine(dir, "uninstall.exe"));
+
+            // Отметка сборки едет вместе со всеми: по ней в следующий раз
+            // станет видно, что именно установлено.
+            Take(found, swaps, staging, Stamp.FileName, Path.Combine(dir, Stamp.FileName));
             Progress(60);
 
             // 4. Инструменты сборки — архив разбирается на отдельные файлы.
@@ -388,8 +425,12 @@ namespace DupoUpdate
             finally { Clean(temp); }
         }
 
-        /// <summary>Записать новую версию в uninstall.dll.</summary>
-        void Stamp(Found found)
+        /// <summary>
+        /// Записать, что теперь установлено: версию в uninstall.dll и отметку
+        /// сборки в version.json рядом с программой.
+        /// Имя Stamp занято типом, поэтому метод называется иначе.
+        /// </summary>
+        void Record(Found found)
         {
             try
             {
@@ -397,9 +438,12 @@ namespace DupoUpdate
 
                 data.AppVersion = found.Version;
                 data.Extra["updated"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+                data.Extra["updatedversion"] = found.Build.Updated.ToString();
                 data.Save(dir);
 
-                Log("Версия записана: " + found.Version);
+                found.Build.Write(dir);
+
+                Log("Записано: " + found.Build);
             }
             catch (Exception ex) { Log("Версию записать не вышло: " + ex.Message); }
         }

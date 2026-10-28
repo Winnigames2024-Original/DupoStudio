@@ -16,6 +16,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Проверить version.json
+        shell: pwsh
+        run: |
+          # Номер версии в version.json должен совпадать с тегом, иначе
+          # обновление у пользователей сравнит сборки не с тем.
+          if (-not (Test-Path "version.json")) { throw "Нет version.json" }
+
+          $mark = Get-Content "version.json" -Raw | ConvertFrom-Json
+          $tagVersion = "${{ github.ref_name }}" -replace '^v', ''
+
+          Write-Host "version.json: $($mark.version), сборка $($mark.updatedversion)"
+          Write-Host "тег:          $tagVersion"
+
+          if ($mark.version -ne $tagVersion) {
+            throw "version.json говорит $($mark.version), а тег $tagVersion"
+          }
+          if ([int]$mark.updatedversion -lt 1) {
+            throw "updatedversion должен быть не меньше 1"
+          }
+
       - name: Поставить MSBuild
         uses: microsoft/setup-msbuild@v2
 
@@ -99,6 +119,10 @@ jobs:
           Copy-Item "Projects" "payload/Projects" -Recurse -Force
           Copy-Item "README.md","CHANGELOG.md","LICENSE" "payload" -Force -ErrorAction SilentlyContinue
 
+          # Отметка сборки ложится рядом с программой: по ней обновление
+          # потом поймёт, что именно установлено.
+          Copy-Item "version.json" "payload/version.json" -Force
+
           # Утилиты едут прямо внутри установщика: без сети они просто
           # распакуются из него и сразу заработают. Папку называем buildtools —
           # имя runtime упаковщик пропускает намеренно, туда качаются PHP и JDK.
@@ -152,6 +176,7 @@ jobs:
             BuildTools.zip
             update.exe
             uninstall.exe
+            version.json
 
       # Сайт собирается на ветке main: выкладывать Pages с тега
       # не разрешают правила окружения, поэтому запускаем сборку отдельно.

@@ -48,6 +48,35 @@ def fetch(repo):
     return [x for x in data if not x.get("draft")]
 
 
+def build_of(rel):
+    """
+    Номер сборки выпуска из его version.json. Одну и ту же версию иногда
+    пересобирают: номер версии тогда прежний, а этот счётчик растёт.
+    Выпуски, сделанные до появления счётчика, считаем первой сборкой.
+    """
+    url = ""
+    for a in rel.get("assets", []):
+        if (a.get("name") or "").lower() == "version.json":
+            url = a.get("browser_download_url") or ""
+            break
+
+    if not url:
+        return 1
+
+    req = urllib.request.Request(url, headers={"User-Agent": "DupoStudio-site"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            mark = json.load(r)
+    except (urllib.error.URLError, urllib.error.HTTPError, ValueError, OSError) as e:
+        print("version.json у %s не прочитался: %s" % (rel.get("tag_name"), e), file=sys.stderr)
+        return 1
+
+    try:
+        return max(1, int(mark.get("updatedversion") or 1))
+    except (TypeError, ValueError):
+        return 1
+
+
 def slug(tag):
     """v0.0.3 → 0.0.3. В адресе буквы v нет."""
     return re.sub(r"^v", "", str(tag or ""), flags=re.I)
@@ -99,6 +128,8 @@ def about(name):
         return "обновление с GitHub"
     if n == "uninstall.exe":
         return "удаление по uninstall.dll"
+    if n == "version.json":
+        return "версия и номер сборки"
     if n.endswith(".zip"):
         return "архив"
     if n.endswith(".tar.gz"):
@@ -308,8 +339,10 @@ def page_version(rel, repo, newest):
     body.append('<div class="hero" style="padding-bottom:24px"><div class="wrap">')
     body.append('<div class="crumbs"><a href="%sreleases/">Релизы</a> / %s</div>'
                 % (up, html.escape(tag)))
-    body.append('<div class="badge">%s%s</div>'
+    build = rel.get("_build") or 1
+    body.append('<div class="badge">%s%s%s</div>'
                 % ("Выпущено " + when(rel.get("published_at")) if rel.get("published_at") else "Выпуск",
+                   " · сборка %d" % build if build > 1 else "",
                    " · последняя версия" if newest else ""))
     body.append('<h1 style="font-size:clamp(32px,5vw,46px)">%s</h1>' % html.escape(name))
     body.append('<p class="lead" style="margin-bottom:0">Файлы этого выпуска и исходники. '
@@ -365,9 +398,11 @@ def page_index(releases, repo):
         for i, rel in enumerate(releases):
             tag = rel.get("tag_name") or ""
             ver = slug(tag)
-            body.append("<tr><td><b>%s</b>%s</td><td>%s</td><td>%d</td>"
+            build = rel.get("_build") or 1
+            body.append("<tr><td><b>%s</b>%s%s</td><td>%s</td><td>%d</td>"
                         '<td><a href="%s/">открыть</a></td></tr>'
                         % (html.escape(tag),
+                           " <span class=\"tag\">сборка %d</span>" % build if build > 1 else "",
                            " <span class=\"tag new\">последняя</span>" if i == 0 else "",
                            when(rel.get("published_at")),
                            len(rel.get("assets", [])),
@@ -377,7 +412,10 @@ def page_index(releases, repo):
         body.append('<p>Список не прочитался — посмотрите '
                     '<a href="https://github.com/%s/releases">выпуски на GitHub</a>.</p>' % repo)
 
-    body.append('<p class="note" style="margin-top:26px">Адрес страницы версии — '
+    body.append('<p class="note" style="margin-top:26px">Тот же список машинно-читаемо — '
+                '<a href="versions.json"><code>/release/versions.json</code></a>: '
+                'номер версии, номер сборки и ссылки на файлы каждого выпуска.</p>')
+    body.append('<p class="note" style="margin-top:14px">Адрес страницы версии — '
                 '<code>/release/0.0.6/</code>. Ссылка с буквой v, как в теге '
                 '(<code>/release/v0.0.6/</code>), тоже работает и ведёт сюда же. '
                 'А <code>/release/latest/</code> всегда открывает последнюю.</p>')
@@ -426,6 +464,47 @@ def write(path, text):
     print("записано: %s" % path)
 
 
+def versions_json(releases, repo):
+    """
+    Список всех версий одним файлом: /release/versions.json. Его читают те,
+    кому нужны не страницы, а сами номера, — в том числе обновление, если
+    GitHub окажется недоступен.
+    """
+    items = []
+    for i, rel in enumerate(releases):
+        tag = rel.get("tag_name") or ""
+        ver = slug(tag)
+        if not ver:
+            continue
+
+        files = {}
+        for a in rel.get("assets", []):
+            nm = a.get("name") or ""
+            if nm:
+                files[nm] = a.get("browser_download_url") or ""
+
+        items.append({
+            "version": ver,
+            "updatedversion": rel.get("_build") or 1,
+            "tag": tag,
+            "name": rel.get("name") or tag,
+            "published": rel.get("published_at") or "",
+            "latest": i == 0,
+            "page": "/release/%s/" % ver,
+            "release": rel.get("html_url") or "",
+            "files": files,
+        })
+
+    data = {
+        "product": "Dupo Studio",
+        "repo": repo,
+        "latest": items[0] if items else None,
+        "versions": items,
+    }
+
+    return json.dumps(data, ensure_ascii=False, indent=2) + "\n"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY") or REPO)
@@ -439,6 +518,9 @@ def main():
         # Без списка всё равно оставляем вход, чтобы адрес не ломался.
         write(os.path.join(root, "index.html"), page_index([], args.repo))
         return 0
+
+    for rel in releases:
+        rel["_build"] = build_of(rel)
 
     for i, rel in enumerate(releases):
         ver = slug(rel.get("tag_name"))
@@ -456,6 +538,7 @@ def main():
                   page_redirect("../" + ver + "/", "../../"))
 
     write(os.path.join(root, "index.html"), page_index(releases, args.repo))
+    write(os.path.join(root, "versions.json"), versions_json(releases, args.repo))
 
     newest = slug(releases[0].get("tag_name"))
     if newest:

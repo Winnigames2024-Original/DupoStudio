@@ -94,11 +94,14 @@ namespace DupoUpdate
                 return 3;
             }
 
-            string installed = data.AppVersion.Length > 0 ? data.AppVersion : "0.0.0";
-            bool newer = Updater.Compare(found.Version, installed) > 0;
+            Stamp here = Stamp.Read(dir);
+            if (here.Version.Length == 0)
+                here = new Stamp(data.AppVersion.Length > 0 ? data.AppVersion : "0.0.0", 1);
 
-            System.Console.WriteLine("Установлено: " + installed);
-            System.Console.WriteLine("Доступно:    " + (found.Version.Length > 0 ? found.Version : "неизвестно"));
+            bool newer = Stamp.Newer(here, found.Build);
+
+            System.Console.WriteLine("Установлено: " + here);
+            System.Console.WriteLine("Доступно:    " + found.Build);
 
             if (checkOnly)
             {

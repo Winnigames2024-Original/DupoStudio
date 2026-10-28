@@ -171,19 +171,24 @@ namespace DupoUpdate
             }
 
             found = result;
-            string installed = data != null && data.AppVersion.Length > 0 ? data.AppVersion : "0.0.0";
+
+            // Та же версия могла быть пересобрана — тогда отличается только
+            // номер сборки из version.json.
+            Stamp here = Stamp.Read(dir);
+            if (here.Version.Length == 0)
+                here = new Stamp(data != null && data.AppVersion.Length > 0 ? data.AppVersion : "0.0.0", 1);
 
             notes.Text = (found.Notes ?? "").Replace("\n", Environment.NewLine);
 
-            if (Updater.Compare(found.Version, installed) <= 0)
+            if (!Stamp.Newer(here, found.Build))
             {
-                state.Text = "Установлена версия " + installed + " — это уже последняя.";
+                state.Text = "Установлено " + here + " — это уже последнее.";
                 go.Text = "Переустановить";
                 go.Enabled = true;
                 return;
             }
 
-            state.Text = "Установлено " + installed + ", доступно " + found.Version + "." +
+            state.Text = "Установлено " + here + ", доступно " + found.Build + "." +
                          Environment.NewLine +
                          "Сначала обновится приложение, затем обновлятор, потом инструменты сборки.";
             go.Enabled = true;
@@ -271,7 +276,7 @@ namespace DupoUpdate
             bar.Value = 100;
             step.Text = "";
             state.Text = changed
-                ? "Готово. Обновлено до версии " + found.Version + "."
+                ? "Готово. Обновлено до " + found.Build + "."
                 : "Менять было нечего.";
 
             go.Text = "Запустить";

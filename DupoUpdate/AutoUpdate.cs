@@ -99,16 +99,17 @@ namespace DupoUpdate
                 return false;
             }
 
-            string installed = data.AppVersion.Length > 0 ? data.AppVersion : "0.0.0";
+            // Номер версии мог не поменяться: ту же версию иногда пересобирают
+            // с поправками. Тогда различает номер сборки из version.json.
+            Stamp here = Here(data, dir);
 
-            if (Updater.Compare(found.Version, installed) <= 0)
+            if (!Stamp.Newer(here, found.Build))
             {
-                Say("Обновлений нет. Установлено " + installed + ", доступно " +
-                    (found.Version.Length > 0 ? found.Version : "неизвестно") + ".");
+                Say("Обновлений нет. Установлено " + here + ", доступно " + found.Build + ".");
                 return false;
             }
 
-            Say("Есть версия " + found.Version + " (установлена " + installed + "). Качаю...");
+            Say("Есть " + found.Build + " (установлено " + here + "). Качаю...");
 
             var updater = new Updater(data, dir);
             updater.Log = Say;
@@ -126,7 +127,7 @@ namespace DupoUpdate
 
             string[] closeFirst = Busy(swaps, appExe);
 
-            Stamp(data, dir, found);
+            Record(data, dir, found);
 
             string bat = Batch.Apply(swaps, updater.Staging, closeFirst,
                                      wasRunning ? appExe : null,
@@ -146,6 +147,22 @@ namespace DupoUpdate
         // ------------------------------------------------------------------
         // мелочи
         // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Что установлено сейчас: version.json рядом с программой, а если
+        /// его нет — версия из записи об установке и первая сборка.
+        /// </summary>
+        static Stamp Here(UninstallData data, string dir)
+        {
+            Stamp mark = Stamp.Read(dir);
+            if (mark.Version.Length > 0)
+            {
+                if (mark.Updated < 1) mark.Updated = 1;
+                return mark;
+            }
+
+            return new Stamp(data.AppVersion.Length > 0 ? data.AppVersion : "0.0.0", 1);
+        }
 
         /// <summary>Путь к главному файлу приложения.</summary>
         static string AppPath(UninstallData data, string dir)
@@ -216,8 +233,11 @@ namespace DupoUpdate
             catch { }
         }
 
-        /// <summary>Записать будущую версию заранее: после выхода писать будет некому.</summary>
-        static void Stamp(UninstallData data, string dir, Found found)
+        /// <summary>
+        /// Записать будущую версию заранее: после выхода писать будет некому.
+        /// Имя Stamp занято типом, поэтому метод называется иначе.
+        /// </summary>
+        static void Record(UninstallData data, string dir, Found found)
         {
             try
             {
@@ -225,7 +245,12 @@ namespace DupoUpdate
 
                 data.AppVersion = found.Version;
                 data.Extra["updated"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+                data.Extra["updatedversion"] = found.Build.Updated.ToString();
                 data.Save(dir);
+
+                // В выпуске version.json может и не быть — тогда пишем сами,
+                // иначе в следующий раз сборку будет не с чем сравнить.
+                found.Build.Write(dir);
             }
             catch { }
         }
